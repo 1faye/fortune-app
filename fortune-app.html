@@ -1,0 +1,758 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🔮 命理大师 - AI 智能算命</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
+            background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .app-container {
+            width: 100%;
+            max-width: 520px;
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(20px);
+            border-radius: 30px;
+            padding: 35px 30px;
+            box-shadow: 0 25px 60px rgba(0,0,0,0.5);
+            border: 1px solid rgba(255,255,255,0.1);
+            transition: all 0.3s;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .header .logo {
+            font-size: 48px;
+            margin-bottom: 8px;
+        }
+
+        .header h1 {
+            font-size: 28px;
+            font-weight: 700;
+            background: linear-gradient(135deg, #f5af19, #f12711);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: 4px;
+        }
+
+        .header p {
+            color: rgba(255,255,255,0.5);
+            font-size: 14px;
+            margin-top: 4px;
+            letter-spacing: 2px;
+        }
+
+        .form-group {
+            margin-bottom: 18px;
+        }
+
+        .form-group label {
+            display: block;
+            color: rgba(255,255,255,0.8);
+            font-size: 14px;
+            margin-bottom: 6px;
+            font-weight: 500;
+        }
+
+        .form-group input, .form-group select {
+            width: 100%;
+            padding: 14px 16px;
+            border-radius: 12px;
+            border: 1px solid rgba(255,255,255,0.15);
+            background: rgba(255,255,255,0.08);
+            color: #fff;
+            font-size: 16px;
+            outline: none;
+            transition: all 0.3s;
+        }
+
+        .form-group input:focus, .form-group select:focus {
+            border-color: #f5af19;
+            background: rgba(255,255,255,0.12);
+            box-shadow: 0 0 20px rgba(245,175,25,0.15);
+        }
+
+        .form-group input::placeholder {
+            color: rgba(255,255,255,0.3);
+        }
+
+        .form-group select option {
+            background: #302b63;
+            color: #fff;
+        }
+
+        .form-row {
+            display: flex;
+            gap: 12px;
+        }
+
+        .form-row .form-group {
+            flex: 1;
+        }
+
+        .btn-divine {
+            width: 100%;
+            padding: 16px;
+            border: none;
+            border-radius: 12px;
+            background: linear-gradient(135deg, #f5af19, #f12711);
+            color: #fff;
+            font-size: 18px;
+            font-weight: 700;
+            letter-spacing: 4px;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-top: 8px;
+            box-shadow: 0 8px 25px rgba(241,39,17,0.3);
+        }
+
+        .btn-divine:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 35px rgba(241,39,17,0.4);
+        }
+
+        .btn-divine:active {
+            transform: translateY(0);
+        }
+
+        .btn-divine:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .result-container {
+            margin-top: 25px;
+            display: none;
+            animation: fadeInUp 0.6s ease;
+        }
+
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .result-card {
+            background: rgba(255,255,255,0.06);
+            border-radius: 16px;
+            padding: 20px;
+            border: 1px solid rgba(255,255,255,0.08);
+        }
+
+        .result-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 16px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid rgba(255,255,255,0.08);
+        }
+
+        .result-header .avatar {
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #f5af19, #f12711);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 28px;
+            flex-shrink: 0;
+        }
+
+        .result-header .info h2 {
+            color: #fff;
+            font-size: 20px;
+        }
+
+        .result-header .info .tags {
+            display: flex;
+            gap: 8px;
+            margin-top: 4px;
+            flex-wrap: wrap;
+        }
+
+        .result-header .info .tags span {
+            padding: 2px 10px;
+            border-radius: 20px;
+            font-size: 12px;
+            background: rgba(255,255,255,0.1);
+            color: rgba(255,255,255,0.7);
+        }
+
+        .fortune-section {
+            margin-bottom: 16px;
+        }
+
+        .fortune-section:last-child {
+            margin-bottom: 0;
+        }
+
+        .fortune-section .section-title {
+            color: #f5af19;
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .fortune-section .section-content {
+            color: rgba(255,255,255,0.8);
+            font-size: 14px;
+            line-height: 1.8;
+        }
+
+        .fortune-meter {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-top: 8px;
+        }
+
+        .fortune-meter .meter-bar {
+            flex: 1;
+            height: 6px;
+            border-radius: 3px;
+            background: rgba(255,255,255,0.1);
+            overflow: hidden;
+        }
+
+        .fortune-meter .meter-bar .fill {
+            height: 100%;
+            border-radius: 3px;
+            transition: width 1s ease;
+            width: 0%;
+        }
+
+        .fortune-meter .meter-label {
+            color: rgba(255,255,255,0.7);
+            font-size: 13px;
+            min-width: 36px;
+            text-align: right;
+        }
+
+        .loading-spinner {
+            display: none;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .loading-spinner .spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid rgba(255,255,255,0.1);
+            border-top-color: #f5af19;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin: 0 auto 12px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .loading-spinner span {
+            color: rgba(255,255,255,0.5);
+            font-size: 14px;
+        }
+
+        .footer-text {
+            text-align: center;
+            color: rgba(255,255,255,0.2);
+            font-size: 12px;
+            margin-top: 20px;
+            letter-spacing: 1px;
+        }
+
+        /* 五行颜色 */
+        .color-wood { color: #4CAF50; }
+        .color-fire { color: #f44336; }
+        .color-earth { color: #FF9800; }
+        .color-metal { color: #E0E0E0; }
+        .color-water { color: #2196F3; }
+
+        .bg-wood { background: #4CAF50; }
+        .bg-fire { background: #f44336; }
+        .bg-earth { background: #FF9800; }
+        .bg-metal { background: #9E9E9E; }
+        .bg-water { background: #2196F3; }
+
+        .shake-animation {
+            animation: shake 0.5s ease;
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            20% { transform: translateX(-5px); }
+            40% { transform: translateX(5px); }
+            60% { transform: translateX(-3px); }
+            80% { transform: translateX(3px); }
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <div class="header">
+            <div class="logo">🔮</div>
+            <h1>命理大师</h1>
+            <p>AI 智能命理 · 洞悉天机</p>
+        </div>
+
+        <!-- 输入表单 -->
+        <div class="form-container" id="formContainer">
+            <div class="form-group">
+                <label>👤 你的名字</label>
+                <input type="text" id="nameInput" placeholder="请输入姓名" maxlength="10">
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>📅 出生年</label>
+                    <select id="yearSelect"></select>
+                </div>
+                <div class="form-group">
+                    <label>📅 出生月</label>
+                    <select id="monthSelect"></select>
+                </div>
+                <div class="form-group">
+                    <label>📅 出生日</label>
+                    <select id="daySelect"></select>
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>⏰ 出生时辰</label>
+                    <select id="hourSelect"></select>
+                </div>
+                <div class="form-group">
+                    <label>⚤ 性别</label>
+                    <select id="genderSelect">
+                        <option value="male">男</option>
+                        <option value="female">女</option>
+                    </select>
+                </div>
+            </div>
+            <button class="btn-divine" id="divineBtn" onclick="startDivination()">
+                🔮 开始算命
+            </button>
+        </div>
+
+        <!-- 加载 -->
+        <div class="loading-spinner" id="loadingSpinner">
+            <div class="spinner"></div>
+            <span>🔮 正在推算命理...</span>
+        </div>
+
+        <!-- 结果 -->
+        <div class="result-container" id="resultContainer">
+            <div class="result-card" id="resultCard"></div>
+            <button class="btn-divine" onclick="resetForm()" style="margin-top:16px;font-size:14px;padding:12px;background:linear-gradient(135deg,#667eea,#764ba2);box-shadow:0 8px 25px rgba(118,75,162,0.3);">
+                🔄 再算一次
+            </button>
+        </div>
+
+        <div class="footer-text">✨ 仅供娱乐 · 信则有不信则无 ✨</div>
+    </div>
+
+    <script>
+        // ========== 初始化日期选择器 ==========
+        (function initSelectors() {
+            const yearSelect = document.getElementById('yearSelect');
+            const monthSelect = document.getElementById('monthSelect');
+            const daySelect = document.getElementById('daySelect');
+            const hourSelect = document.getElementById('hourSelect');
+
+            // 年份 1960-2026
+            for (let y = 1960; y <= 2026; y++) {
+                const opt = document.createElement('option');
+                opt.value = y;
+                opt.textContent = y + '年';
+                yearSelect.appendChild(opt);
+            }
+            yearSelect.value = 2000;
+
+            // 月份
+            for (let m = 1; m <= 12; m++) {
+                const opt = document.createElement('option');
+                opt.value = m;
+                opt.textContent = m + '月';
+                monthSelect.appendChild(opt);
+            }
+            monthSelect.value = 6;
+
+            // 日期
+            function updateDays() {
+                const y = parseInt(yearSelect.value);
+                const m = parseInt(monthSelect.value);
+                const days = new Date(y, m, 0).getDate();
+                daySelect.innerHTML = '';
+                for (let d = 1; d <= days; d++) {
+                    const opt = document.createElement('option');
+                    opt.value = d;
+                    opt.textContent = d + '日';
+                    daySelect.appendChild(opt);
+                }
+                if (daySelect.options.length >= 15) daySelect.value = 15;
+            }
+            yearSelect.addEventListener('change', updateDays);
+            monthSelect.addEventListener('change', updateDays);
+            updateDays();
+
+            // 时辰
+            const shichen = [
+                { label: '子时 (23:00-00:59)', val: 0 },
+                { label: '丑时 (01:00-02:59)', val: 1 },
+                { label: '寅时 (03:00-04:59)', val: 2 },
+                { label: '卯时 (05:00-06:59)', val: 3 },
+                { label: '辰时 (07:00-08:59)', val: 4 },
+                { label: '巳时 (09:00-10:59)', val: 5 },
+                { label: '午时 (11:00-12:59)', val: 6 },
+                { label: '未时 (13:00-14:59)', val: 7 },
+                { label: '申时 (15:00-16:59)', val: 8 },
+                { label: '酉时 (17:00-18:59)', val: 9 },
+                { label: '戌时 (19:00-20:59)', val: 10 },
+                { label: '亥时 (21:00-22:59)', val: 11 },
+            ];
+            shichen.forEach(s => {
+                const opt = document.createElement('option');
+                opt.value = s.val;
+                opt.textContent = s.label;
+                hourSelect.appendChild(opt);
+            });
+            hourSelect.value = 6;
+        })();
+
+        // ========== 命理数据 ==========
+        const TIANGAN = ['甲','乙','丙','丁','戊','己','庚','辛','壬','癸'];
+        const DIZHI = ['子','丑','寅','卯','辰','巳','午','未','申','酉','戌','亥'];
+        const SHENGXIAO = ['鼠','牛','虎','兔','龙','蛇','马','羊','猴','鸡','狗','猪'];
+        const WUXING = ['木','木','火','火','土','土','金','金','水','水'];
+        const WUXING_COLOR = ['color-wood','color-wood','color-fire','color-fire','color-earth','color-earth','color-metal','color-metal','color-water','color-water'];
+        const WUXING_BG = ['bg-wood','bg-wood','bg-fire','bg-fire','bg-earth','bg-earth','bg-metal','bg-metal','bg-water','bg-water'];
+
+        const LUCK_TEXTS = {
+            wealth: ['💰 正财旺盛','💰 财源广进','💰 财运平平','💰 破财之兆','💰 偏财大旺'],
+            career: ['💼 事业腾飞','💼 步步高升','💼 平稳发展','💼 谨防小人','💼 贵人相助'],
+            love: ['❤️ 桃花旺盛','❤️ 姻缘美满','❤️ 感情平淡','❤️ 谨防烂桃花','❤️ 天赐良缘'],
+            health: ['🏥 身体康健','🏥 精力充沛','🏥 注意休息','🏥 易有小恙','🏥 长寿之相'],
+        };
+
+        function getZodiac(year) {
+            return SHENGXIAO[(year - 4) % 12];
+        }
+
+        function getGanZhi(year) {
+            const gan = (year - 4) % 10;
+            const zhi = (year - 4) % 12;
+            return TIANGAN[gan] + DIZHI[zhi];
+        }
+
+        function getWuXing(year) {
+            const gan = (year - 4) % 10;
+            return WUXING[gan];
+        }
+
+        function getConstellation(month, day) {
+            const arr = [
+                { name: '摩羯座', start: [1,1], end: [1,19] },
+                { name: '水瓶座', start: [1,20], end: [2,18] },
+                { name: '双鱼座', start: [2,19], end: [3,20] },
+                { name: '白羊座', start: [3,21], end: [4,19] },
+                { name: '金牛座', start: [4,20], end: [5,20] },
+                { name: '双子座', start: [5,21], end: [6,21] },
+                { name: '巨蟹座', start: [6,22], end: [7,22] },
+                { name: '狮子座', start: [7,23], end: [8,22] },
+                { name: '处女座', start: [8,23], end: [9,22] },
+                { name: '天秤座', start: [9,23], end: [10,23] },
+                { name: '天蝎座', start: [10,24], end: [11,22] },
+                { name: '射手座', start: [11,23], end: [12,21] },
+                { name: '摩羯座', start: [12,22], end: [12,31] },
+            ];
+            for (const c of arr) {
+                const [sm, sd] = c.start;
+                const [em, ed] = c.end;
+                if ((month === sm && day >= sd) || (month === em && day <= ed) || (month > sm && month < em)) {
+                    return c.name;
+                }
+            }
+            return '未知';
+        }
+
+        function getLuckyNumber(year) {
+            return ((year * 7 + 13) % 9) + 1;
+        }
+
+        function getPersonality(wuxing, zodiac) {
+            const map = {
+                '木': '🌱 仁爱宽厚，有上进心，善于策划，但有时过于固执。',
+                '火': '🔥 热情奔放，充满活力，领导力强，但容易急躁。',
+                '土': '⛰️ 稳重踏实，诚实守信，有耐心，但有时保守。',
+                '金': '⚔️ 果断刚毅，意志坚定，有魄力，但容易固执己见。',
+                '水': '🌊 智慧聪颖，善于变通，直觉敏锐，但情绪易波动。',
+            };
+            return map[wuxing] || '天机不可泄露。';
+        }
+
+        // 五行索引查找（WUXING有重复值，用对象映射替代indexOf）
+        const WUXING_INDEX={木:0,火:2,土:4,金:6,水:8};
+
+        function getFortuneDetail(wuxing, zodiac, gender, name) {
+            const nameLength = name.length;
+            const zodiacIndex = SHENGXIAO.indexOf(zodiac);
+            const wuxingIndex = WUXING_INDEX[wuxing] || 0;
+
+            let wealthScore = (nameLength * 7 + zodiacIndex * 3 + wuxingIndex * 5) % 100;
+            let careerScore = (zodiacIndex * 9 + wuxingIndex * 7 + (gender === 'male' ? 13 : 17)) % 100;
+            let loveScore = (name.charCodeAt(0) * 3 + zodiacIndex * 11 + (gender === 'female' ? 19 : 11)) % 100;
+            let healthScore = (wuxingIndex * 13 + nameLength * 5 + 23) % 100;
+
+            if (wuxing === '火') wealthScore = Math.min(100, wealthScore + 10);
+            if (zodiac === '龙') careerScore = Math.min(100, careerScore + 10);
+            if (zodiac === '兔') loveScore = Math.min(100, loveScore + 10);
+            if (wuxing === '水') healthScore = Math.min(100, healthScore + 10);
+
+            return { wealthScore, careerScore, loveScore, healthScore };
+        }
+
+        function getAdvice(wuxing, zodiac) {
+            const advices = [
+                '今年宜多行善事，积累福报。',
+                '事业上把握春夏之交的机遇。',
+                '财运在北方，可考虑向北方发展。',
+                '感情上顺其自然，莫要强求。',
+                '注意脾胃健康，饮食宜清淡。',
+                '今年贵人星座是双子座，多与双子座朋友来往。',
+                '佩戴红色饰品可旺运势。',
+                '办公桌朝东摆放有利事业发展。',
+                '今年适合学习新技能，提升自我。',
+                '多接触大自然，有助于平衡五行。',
+                '投资宜保守，避免高风险项目。',
+                '家中摆放绿色植物可增旺运势。',
+            ];
+            const idx = (wuxing.charCodeAt(0) + zodiac.charCodeAt(0)) % advices.length;
+            return advices[idx];
+        }
+
+        function getLuckyColor(wuxing) {
+            const map = {
+                '木': '绿色、青色',
+                '火': '红色、紫色',
+                '土': '黄色、棕色',
+                '金': '白色、金色',
+                '水': '蓝色、黑色',
+            };
+            return map[wuxing] || '彩色';
+        }
+
+        // ========== 主逻辑 ==========
+        function startDivination() {
+            const name = document.getElementById('nameInput').value.trim();
+            if (!name) {
+                document.getElementById('nameInput').focus();
+                document.getElementById('nameInput').style.borderColor = '#f44336';
+                setTimeout(() => document.getElementById('nameInput').style.borderColor = '', 1500);
+                return;
+            }
+
+            const year = parseInt(document.getElementById('yearSelect').value);
+            const month = parseInt(document.getElementById('monthSelect').value);
+            const day = parseInt(document.getElementById('daySelect').value);
+            const hour = parseInt(document.getElementById('hourSelect').value);
+            const gender = document.getElementById('genderSelect').value;
+
+            // 显示加载
+            document.getElementById('formContainer').style.display = 'none';
+            document.getElementById('loadingSpinner').style.display = 'block';
+            document.getElementById('resultContainer').style.display = 'none';
+
+            setTimeout(() => {
+                const result = calculateFortune(name, year, month, day, hour, gender);
+                renderResult(result);
+                document.getElementById('loadingSpinner').style.display = 'none';
+                document.getElementById('resultContainer').style.display = 'block';
+            }, 1800);
+        }
+
+        function calculateFortune(name, year, month, day, hour, gender) {
+            const zodiac = getZodiac(year);
+            const ganzhi = getGanZhi(year);
+            const wuxing = getWuXing(year);
+            const constellation = getConstellation(month, day);
+            const luckyNum = getLuckyNumber(year);
+            const personality = getPersonality(wuxing, zodiac);
+            const scores = getFortuneDetail(wuxing, zodiac, gender, name);
+            const advice = getAdvice(wuxing, zodiac);
+            const luckyColor = getLuckyColor(wuxing);
+            const genderText = gender === 'male' ? '男' : '女';
+
+            // 时柱
+            const hourGan = (parseInt((year - 4) % 10) + Math.floor(hour / 2)) % 10;
+            const hourZhi = hour;
+            const shichenName = DIZHI[hour];
+            const shizhu = TIANGAN[hourGan] + shichenName;
+
+            return {
+                name, year, month, day, gender: genderText,
+                zodiac, ganzhi, wuxing, constellation, luckyNum,
+                personality, scores, advice, luckyColor, shizhu
+            };
+        }
+
+        function renderResult(r) {
+            const card = document.getElementById('resultCard');
+            const ws = r.scores.wealthScore;
+            const cs = r.scores.careerScore;
+            const ls = r.scores.loveScore;
+            const hs = r.scores.healthScore;
+
+            const wuxingEmoji = { '木':'🌱', '火':'🔥', '土':'⛰️', '金':'⚔️', '水':'🌊' };
+
+            // 综合运势
+            const totalScore = Math.round((ws + cs + ls + hs) / 4);
+            const totalLevel = totalScore >= 80 ? '大吉' : totalScore >= 60 ? '上吉' : totalScore >= 40 ? '中平' : '小凶';
+
+            card.innerHTML = `
+                <div class="result-header">
+                    <div class="avatar">${wuxingEmoji[r.wuxing] || '🔮'}</div>
+                    <div class="info">
+                        <h2>${escapeHTML(r.name)} <span style="font-size:14px;color:rgba(255,255,255,0.4);">${r.gender}</span></h2>
+                        <div class="tags">
+                            <span>${r.zodiac}年</span>
+                            <span>${r.ganzhi}</span>
+                            <span>${r.constellation}</span>
+                            <span>五行 ${r.wuxing}</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="fortune-section">
+                    <div class="section-title">📊 综合运势 · ${totalLevel}</div>
+                    <div class="fortune-meter">
+                        <span style="font-size:13px;color:rgba(255,255,255,0.5);">综合指数</span>
+                        <div class="meter-bar">
+                            <div class="fill" style="width:${totalScore}%;background:linear-gradient(90deg,#f5af19,#f12711);"></div>
+                        </div>
+                        <span class="meter-label">${totalScore}</span>
+                    </div>
+                </div>
+
+                <div class="fortune-section">
+                    <div class="section-title">📜 八字命盘</div>
+                    <div class="section-content" style="display:flex;gap:12px;flex-wrap:wrap;">
+                        <span style="background:rgba(255,255,255,0.08);padding:4px 14px;border-radius:8px;">年柱 ${r.ganzhi}</span>
+                        <span style="background:rgba(255,255,255,0.08);padding:4px 14px;border-radius:8px;">时柱 ${r.shizhu}</span>
+                        <span style="background:rgba(255,255,255,0.08);padding:4px 14px;border-radius:8px;">生肖 ${r.zodiac}</span>
+                        <span style="background:rgba(255,255,255,0.08);padding:4px 14px;border-radius:8px;">五行 ${r.wuxing}</span>
+                    </div>
+                </div>
+
+                <div class="fortune-section">
+                    <div class="section-title">🎯 详细运势</div>
+
+                    <div style="margin-bottom:10px;">
+                        <div style="display:flex;justify-content:space-between;margin-bottom:2px;">
+                            <span style="color:rgba(255,255,255,0.7);font-size:13px;">${LUCK_TEXTS.wealth[getTextIndex(ws, 5)]}</span>
+                            <span style="color:rgba(255,255,255,0.4);font-size:12px;">${ws}</span>
+                        </div>
+                        <div class="meter-bar">
+                            <div class="fill bg-wood" style="width:${ws}%;"></div>
+                        </div>
+                    </div>
+
+                    <div style="margin-bottom:10px;">
+                        <div style="display:flex;justify-content:space-between;margin-bottom:2px;">
+                            <span style="color:rgba(255,255,255,0.7);font-size:13px;">${LUCK_TEXTS.career[getTextIndex(cs, 5)]}</span>
+                            <span style="color:rgba(255,255,255,0.4);font-size:12px;">${cs}</span>
+                        </div>
+                        <div class="meter-bar">
+                            <div class="fill bg-fire" style="width:${cs}%;"></div>
+                        </div>
+                    </div>
+
+                    <div style="margin-bottom:10px;">
+                        <div style="display:flex;justify-content:space-between;margin-bottom:2px;">
+                            <span style="color:rgba(255,255,255,0.7);font-size:13px;">${LUCK_TEXTS.love[getTextIndex(ls, 5)]}</span>
+                            <span style="color:rgba(255,255,255,0.4);font-size:12px;">${ls}</span>
+                        </div>
+                        <div class="meter-bar">
+                            <div class="fill bg-water" style="width:${ls}%;"></div>
+                        </div>
+                    </div>
+
+                    <div>
+                        <div style="display:flex;justify-content:space-between;margin-bottom:2px;">
+                            <span style="color:rgba(255,255,255,0.7);font-size:13px;">${LUCK_TEXTS.health[getTextIndex(hs, 5)]}</span>
+                            <span style="color:rgba(255,255,255,0.4);font-size:12px;">${hs}</span>
+                        </div>
+                        <div class="meter-bar">
+                            <div class="fill bg-earth" style="width:${hs}%;"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="fortune-section">
+                    <div class="section-title">🧬 性格分析</div>
+                    <div class="section-content">${r.personality}</div>
+                </div>
+
+                <div class="fortune-section">
+                    <div class="section-title">🎲 幸运信息</div>
+                    <div class="section-content">
+                        <span style="display:inline-block;margin-right:16px;">🔢 幸运数字：<strong style="color:#f5af19;">${r.luckyNum}</strong></span>
+                        <span style="display:inline-block;margin-right:16px;">🎨 幸运颜色：<strong style="color:#f5af19;">${r.luckyColor}</strong></span>
+                        <span style="display:inline-block;">♈ 星座：<strong style="color:#f5af19;">${r.constellation}</strong></span>
+                    </div>
+                </div>
+
+                <div class="fortune-section">
+                    <div class="section-title">💡 大师建议</div>
+                    <div class="section-content" style="color:rgba(255,255,255,0.85);background:rgba(245,175,25,0.08);padding:12px 16px;border-radius:10px;border-left:3px solid #f5af19;">
+                        ${r.advice}
+                    </div>
+                </div>
+            `;
+
+            // 滚动到结果区域
+            document.getElementById('resultContainer').scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+
+        function escapeHTML(str) {
+            var d=document.createElement('div');
+            d.textContent=str;
+            return d.innerHTML;
+        }
+
+        function getTextIndex(score, count) {
+            if (score >= 85) return 0;
+            if (score >= 70) return 1;
+            if (score >= 45) return 2;
+            if (score >= 25) return 3;
+            return 4;
+        }
+
+        function resetForm() {
+            document.getElementById('resultContainer').style.display = 'none';
+            document.getElementById('formContainer').style.display = 'block';
+            document.getElementById('formContainer').scrollIntoView({ behavior: 'smooth' });
+        }
+    </script>
+</body>
+</html>

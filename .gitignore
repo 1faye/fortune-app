@@ -1,0 +1,3 @@
+*.gz
+server.py
+.DS_Store
