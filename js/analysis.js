@@ -1009,7 +1009,7 @@ function analyzeGuardian(dGZ,gys){
 
 // ==================== 晚年运势 ====================
 function analyzeWannian(dGZ,ps,gys){
-    let t='',ds=dGZ.s,de=SE[ds],sGZ=ps[3];
+    let t='',ds=dGZ.s,db=dGZ.b,de=SE[ds],sGZ=ps[3];
     let sShi=getShiShen(ds,sGZ.s);
     t+='<p style="color:var(--accent);text-indent:0;">👵 日主'+S[ds]+de+'，时柱'+S[sGZ.s]+B[sGZ.b]+'（'+sShi+'）——</p>';
     if(sShi==='食神'||sShi==='伤官')t+='<p>时柱带食伤——你的晚年有福气。子女孝顺，生活有情趣。退休后反而能发展出第二春的兴趣爱好，越活越年轻。健康上注意脾胃保养，少食多餐。</p>';
