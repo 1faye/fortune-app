@@ -1,3 +1,5 @@
 *.gz
 server.py
 .DS_Store
+node_modules/
+app.bak.js
