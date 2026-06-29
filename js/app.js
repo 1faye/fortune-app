@@ -892,9 +892,9 @@ function calcHepan(){
     let aNayinWx=nayinWxMap[aNayin]||'',bNayinWx=nayinWxMap[bNayin]||'';
     const wxSheng={金:'土生金→',水:'金生水→',木:'水生木→',火:'木生火→',土:'火生土→'};
     const wxKe={金:'火克金→',水:'土克水→',木:'金克木→',火:'水克火→',土:'木克土→'};
+    let wxShengMap={'金':['土'],'水':['金'],'木':['水'],'火':['木'],'土':['火']};
     let nayinRel='';
     if(aNayinWx&&bNayinWx){
-        let wxShengMap={'金':['土'],'水':['金'],'木':['水'],'火':['木'],'土':['火']};
         let aLabel=(ag==='female'?'女方':'男方'),bLabel=(bg==='female'?'女方':'男方');
         if(wxShengMap[aNayinWx]&&wxShengMap[aNayinWx].includes(bNayinWx)){nayinRel=bLabel+bNayinWx+'生'+aLabel+aNayinWx+'，年柱根基相生——这是合婚中最看重的维度之一，大吉之象。B方旺A方运势，婚后家运蒸蒸日上。';nayinWxScore=18;}
         else if(wxShengMap[bNayinWx]&&wxShengMap[bNayinWx].includes(aNayinWx)){nayinRel=aLabel+aNayinWx+'生'+bLabel+bNayinWx+'，年柱相生，吉。A方付出滋养B方，家庭根基稳固。';nayinWxScore=12;}
