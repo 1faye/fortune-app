@@ -42,6 +42,7 @@
 <div id="res" style="display:none;"><div class="card" id="bazi"><div class="card-header" onclick="toggleCard(this)"><div class="card-title">🏷 四柱八字</div><span class="card-arrow">▼</span></div><div class="card-body"><div class="card-body-inner pt0"><div class="bazi-table" id="baziTbl"></div><div class="info-row" id="nayinR"></div><div class="info-row" id="kwR"></div><div class="info-row" id="taiyuanR"></div><div class="ts-info" id="tsInfo"></div><div id="riZhuJie" style="margin-top:10px;padding:10px 12px;background:#fdf8f5;border-radius:10px;font-size:11px;line-height:1.7;color:var(--text);border:1px solid var(--border);"></div></div></div></div>
 <div class="card" id="overview"><div class="card-header" onclick="toggleCard(this)"><div class="card-title">🔮 命局总览 & 用神喜忌</div><span class="card-arrow">▼</span></div><div class="card-body"><div class="card-body-inner"><div class="summary-grid" id="sg"></div><div class="ys-box" id="ysBox"></div></div></div></div>
 <div class="card"><div class="card-header" onclick="toggleCard(this)"><div class="card-title">🌿 五行力量 & 十二长生</div><span class="card-arrow">▼</span></div><div class="card-body"><div class="card-body-inner"><div class="wx-bars" id="wxStat"></div><div style="margin-top:12px;" id="csTbl"></div><div id="wxExplain" class="analysis-text" style="margin-top:8px;"></div></div></div></div>
+<div class="card"><div class="card-header" onclick="toggleCard(this)"><div class="card-title">🌊 五行流通分析</div><span class="card-arrow">▼</span></div><div class="card-body"><div class="card-body-inner"><div id="wxFlow" class="analysis-text"></div></div></div></div>
 <div class="card"><div class="card-header" onclick="toggleCard(this)"><div class="card-title">⚡ 地支合冲刑害</div><span class="card-arrow">▼</span></div><div class="card-body"><div class="card-body-inner"><div class="tag-row" id="dzRel"></div></div></div></div>
 <div class="card"><div class="card-header" onclick="toggleCard(this)"><div class="card-title">🔗 十神全表 & 藏干</div><span class="card-arrow">▼</span></div><div class="card-body"><div class="card-body-inner"><table class="ss-table"><thead id="ssTh"></thead><tbody id="ssTb"></tbody></table><div style="margin-top:8px;" id="hidStem"></div><div id="ssJieDiv" class="analysis-text" style="margin-top:8px;"></div></div></div></div>
 <div class="card"><div class="card-header" onclick="toggleCard(this)"><div class="card-title">⭐ 神煞</div><span class="card-arrow">▼</span></div><div class="card-body"><div class="card-body-inner"><div class="tag-row" id="sshaR"></div><div id="sshaJie" class="analysis-text" style="margin-top:8px;"></div></div></div></div>
@@ -59,6 +60,7 @@
 <div class="card"><div class="card-header" onclick="toggleCard(this)"><div class="card-title">🔑 一生关键年龄</div><span class="card-arrow">▼</span></div><div class="card-body"><div class="card-body-inner"><div id="keyage" class="analysis-text"></div></div></div></div>
 <div class="card"><div class="card-header" onclick="toggleCard(this)"><div class="card-title">✍️ 取名改名建议</div><span class="card-arrow">▼</span></div><div class="card-body"><div class="card-body-inner"><div id="naming" class="analysis-text"></div></div></div></div>
 <div class="card"><div class="card-header"><div class="card-title">📊 命格综合评分</div><span class="card-arrow">▼</span></div><div class="card-body"><div class="card-body-inner"><div id="scorecard" class="analysis-text"></div></div></div></div>
+<div class="card"><div class="card-header" onclick="toggleCard(this)"><div class="card-title">📊 十神格局解析</div><span class="card-arrow">▼</span></div><div class="card-body"><div class="card-body-inner"><div id="shishenGeju" class="analysis-text"></div></div></div></div>
 <div class="card"><div class="card-header"><div class="card-title">🛡️ 本命守护与幸运物</div><span class="card-arrow">▼</span></div><div class="card-body"><div class="card-body-inner"><div id="guardian" class="analysis-text"></div></div></div></div>
 <div class="card"><div class="card-header"><div class="card-title">👵 晚年运势速览</div><span class="card-arrow">▼</span></div><div class="card-body"><div class="card-body-inner"><div id="wannian" class="analysis-text"></div></div></div></div>
 <div class="card"><div class="card-header"><div class="card-title">📅 本周运势参考</div><span class="card-arrow">▼</span></div><div class="card-body"><div class="card-body-inner"><div id="weekly" class="analysis-text"></div></div></div></div>
@@ -73,6 +75,8 @@
 </div>
 <div id="lnAnalysis" class="analysis-text" style="margin-top:8px;"></div>
 <div class="liunian-grid" id="lnGrid" style="margin-top:12px;"></div>
+<div style="margin-top:16px;"><span style="font-weight:700;color:var(--accent);">🔮 当前流年逐月运势：</span></div>
+<table class="ln-table-sm" id="liunianMonthTbl"></table>
 </div></div></div>
 
 <div class="card" id="liuyue"><div class="card-header" onclick="toggleCard(this)"><div class="card-title">📆 流月分析（自由选择年/月）</div><span class="card-arrow">▼</span></div><div class="card-body"><div class="card-body-inner">
@@ -239,6 +243,7 @@
 
 <script src="js/data.js" defer></script>
 <script src="js/analysis.js" defer></script>
+<script src="js/analysis_extra.js" defer></script>
 <script src="js/divination.js" defer></script>
 <script src="js/app.js" defer></script>
 

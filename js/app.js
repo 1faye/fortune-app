@@ -131,6 +131,8 @@ function render(y,m,d,h,gen){
     wo.forEach(w=>{let c=wc[w];let pct=Math.round(c/mc*100);wxH+='<div class="wx-bar"><div class="wx-name">'+w+'</div><div class="wx-num wx-'+w+'">'+c+'</div><div class="bar-track"><div class="bar-fill" style="width:'+pct+'%;background:var(--'+w+')"></div></div></div>'});
     document.getElementById('wxStat').innerHTML=wxH;
     document.getElementById('wxExplain').innerHTML=analyzeWuxingDetail(wc,gys);
+    // 五行流通分析
+    document.getElementById('wxFlow').innerHTML=analyzeWuxingFlow(wc,gys);
     // 十二长生
     let csH='<table class="ss-table"><tr><th></th>'+['年柱','月柱','日柱','时柱'].map(n=>'<th>'+n+'</th>').join('')+'</tr><tr><td style="color:#888;">十二长生</td>';
     ps.forEach(p=>{let cs=getChangSheng12(dGZ_.s,p.b);let cc=cs.i<=5?'ss-good':(cs.i<=8?'ss-mid':'ss-bad');csH+='<td class="'+cc+'">'+cs.n+'</td>'});csH+='</tr></table>';document.getElementById('csTbl').innerHTML=csH;
@@ -201,6 +203,7 @@ function render(y,m,d,h,gen){
     document.getElementById('keyage').innerHTML=analyzeKeyAge(dGZ_,ps,cyGZ,gen,gys,gst);
     document.getElementById('naming').innerHTML=analyzeNaming(dGZ_,ps,gys);
     document.getElementById('scorecard').innerHTML=analyzeScore(dGZ_,ps,gst,gys,ssha);
+    document.getElementById('shishenGeju').innerHTML=analyzeShiShenGeJu(dGZ_,ps);
     document.getElementById('guardian').innerHTML=analyzeGuardian(dGZ_,gys);
     document.getElementById('wannian').innerHTML=analyzeWannian(dGZ_,ps,gys);
     document.getElementById('weekly').innerHTML=analyzeWeekly(dGZ_,gys);
@@ -220,6 +223,8 @@ function render(y,m,d,h,gen){
     for(let i=cy-1;i<cy+9;i++){let ls=((i-4)%10+10)%10,lb=((i-4)%12+12)%12;lnH+='<div class="ln-item'+(i===cy?' current':'')+'"><div class="ln-year">'+i+'</div><div class="ln-gz wx-'+SE[ls]+'">'+S[ls]+B[lb]+'</div><div style="font-size:8px;color:#555;">'+getNayin(ls,lb)+'</div></div>'}
     document.getElementById('lnGrid').innerHTML=lnH;
     let cls=((cy-4)%10+10)%10,clb=((cy-4)%12+12)%12;
+    // 当前流年12个月逐月运势
+    document.getElementById('liunianMonthTbl').innerHTML=analyzeLiunianMonths(cy,cls,clb,dGZ_,gys,gst);
     let le=SE[cls];let ySet=new Set(gys.ys),jSet=new Set(gys.js);
     let lt='<b>'+cy+'年流年：</b>'+S[cls]+B[clb]+'（'+getNayin(cls,clb)+'）';
     // 初始化流年流月流日选择器
@@ -487,11 +492,9 @@ function analyzeTimeStem(gzStem,gzBranch,dayStem,fullPillars,gender,lon){
 
     // 冲合检测
     let dayBranch=cdGZ.b;
-    let ch={0:6,6:0,1:7,7:1,2:8,8:2,3:9,9:3,4:10,10:4,5:11,11:5};
-    let lh={0:1,1:0,2:11,3:10,4:9,5:8,6:7,7:6,8:5,9:4,10:3,11:2};
     let ha={0:7,7:0,1:6,6:1,2:5,5:2,3:4,4:3,8:11,11:8,9:10,10:9};
-    if(ch[gzBranch]===dayBranch) t+='<p><strong>⚡ 地支冲合依据：</strong>今日地支'+B[gzBranch]+'与你的日支'+B[dayBranch]+'构成<em>六冲关系</em>（子午冲/丑未冲/寅申冲/卯酉冲/辰戌冲/巳亥冲）。地支六冲在命理中属于最强烈的对立关系——<em>大事不宜</em>，感情易争执，出行注意安全。</p>';
-    else if(lh[gzBranch]===dayBranch) t+='<p><strong>⚡ 地支冲合依据：</strong>今日地支'+B[gzBranch]+'与你的日支'+B[dayBranch]+'构成<strong>六合关系</strong>（子丑合/寅亥合/卯戌合/辰酉合/巳申合/午未合）。地支六合是命理中最和谐的组合——贵人运强，人际和谐，适合合作洽谈。</p>';
+    if(ZHI_CHONG[gzBranch]===dayBranch) t+='<p><strong>⚡ 地支冲合依据：</strong>今日地支'+B[gzBranch]+'与你的日支'+B[dayBranch]+'构成<em>六冲关系</em>（子午冲/丑未冲/寅申冲/卯酉冲/辰戌冲/巳亥冲）。地支六冲在命理中属于最强烈的对立关系——<em>大事不宜</em>，感情易争执，出行注意安全。</p>';
+    else if(ZHI_HE[gzBranch]===dayBranch) t+='<p><strong>⚡ 地支冲合依据：</strong>今日地支'+B[gzBranch]+'与你的日支'+B[dayBranch]+'构成<strong>六合关系</strong>（子丑合/寅亥合/卯戌合/辰酉合/巳申合/午未合）。地支六合是命理中最和谐的组合——贵人运强，人际和谐，适合合作洽谈。</p>';
     else if(ha[gzBranch]===dayBranch) t+='<p>今日地支'+B[gzBranch]+'与日支'+B[dayBranch]+'相害，小事不顺但影响不大。注意细节。</p>';
 
     // 用神/忌神/平运总结
@@ -800,19 +803,16 @@ function calcHepan(){
 
     let aDS=aPillars[2].s,bDS=bPillars[2].s;
     let aDB=aPillars[2].b,bDB=bPillars[2].b;
-    let ganHe={0:5,5:0,1:6,6:1,2:7,7:2,3:8,8:3,4:9,9:4};
-    let ch={0:6,6:0,1:7,7:1,2:8,8:2,3:9,9:3,4:10,10:4,5:11,11:5};
-    let lh={0:1,1:0,2:11,3:10,4:9,5:8,6:7,7:6,8:5,9:4,10:3,11:2};
 
     // 1. 日干合化
     let ganHeScore=0;
-    if(ganHe[aDS]===bDS){analysis+='<p><strong>【日干合化】</strong>双方日干<strong style="color:#8bc34a;">'+S[aDS]+'与'+S[bDS]+'相合</strong>，此为天干五合之象。两人一见如故，性格天然互补，沟通无障碍，是天作之合的基础。</p>';ganHeScore=15;}
+    if(GAN_HE[aDS]===bDS){analysis+='<p><strong>【日干合化】</strong>双方日干<strong style="color:#8bc34a;">'+S[aDS]+'与'+S[bDS]+'相合</strong>，此为天干五合之象。两人一见如故，性格天然互补，沟通无障碍，是天作之合的基础。</p>';ganHeScore=15;}
     else{analysis+='<p><strong>【日干合化】</strong>双方日干为'+S[aDS]+'与'+S[bDS]+'，无合化关系。虽然没有天然默契，但这种组合也有好处——两人保持各自独立性，不会过度依赖对方。</p>';}
 
     // 2. 日支关系
     let zhiScore=0;
-    if(lh[aDB]===bDB){analysis+='<p><strong>【夫妻宫互动】</strong>双方日支<strong style="color:#8bc34a;">'+B[aDB]+'与'+B[bDB]+'六合</strong>，这是最理想的夫妻宫搭配。相处时温馨和谐，彼此有强烈的归属感，婚姻基础极为扎实。</p>';zhiScore=10;}
-    else if(ch[aDB]===bDB){analysis+='<p><strong>【夫妻宫互动】</strong><em>双方日支'+B[aDB]+'与'+B[bDB]+'相冲！</em>这是需要特别留意的组合。两人性格差异大，容易产生摩擦，但也因此能碰撞出火花。关键在于学会包容和换位思考。</p>';zhiScore=-15;}
+    if(ZHI_HE[aDB]===bDB){analysis+='<p><strong>【夫妻宫互动】</strong>双方日支<strong style="color:#8bc34a;">'+B[aDB]+'与'+B[bDB]+'六合</strong>，这是最理想的夫妻宫搭配。相处时温馨和谐，彼此有强烈的归属感，婚姻基础极为扎实。</p>';zhiScore=10;}
+    else if(ZHI_CHONG[aDB]===bDB){analysis+='<p><strong>【夫妻宫互动】</strong><em>双方日支'+B[aDB]+'与'+B[bDB]+'相冲！</em>这是需要特别留意的组合。两人性格差异大，容易产生摩擦，但也因此能碰撞出火花。关键在于学会包容和换位思考。</p>';zhiScore=-15;}
     else{analysis+='<p><strong>【夫妻宫互动】</strong>双方日支为'+B[aDB]+'与'+B[bDB]+'，无冲无合。相处模式自由，彼此尊重个人空间，适合保持适当距离的关系。</p>';}
 
     // 3. 四柱交叉十神分析
@@ -848,6 +848,34 @@ function calcHepan(){
         analysis+='<p><strong>【五行互补】</strong>'+compDetails.map(d=>'<span style="color:#8bc34a;">'+d+'</span>').join('；')+'。</p>';
     }else{
         analysis+='<p><strong>【五行互补】</strong>两人五行配置独立性较强，各自完整，在一起更像是两个独立个体的并肩前行。</p>';
+    }
+    // 五行互补深度解读
+    let wxDeep='';
+    let aDayWx=SE[aDS],bDayWx=SE[bDS];
+    const wxRelMap={
+        '木':{sheng:'水',ke:'土',shengBy:'火',keBy:'金',nature:'生发向上，代表成长、仁慈和创造力'},
+        '火':{sheng:'木',ke:'金',shengBy:'土',keBy:'水',nature:'热情奔放，代表行动力、礼仪和表现力'},
+        '土':{sheng:'火',ke:'水',shengBy:'金',keBy:'木',nature:'稳重厚实，代表诚信、包容和承载力'},
+        '金':{sheng:'土',ke:'木',shengBy:'水',keBy:'火',nature:'刚毅果断，代表正义、决断和执行力'},
+        '水':{sheng:'金',ke:'火',shengBy:'木',keBy:'土',nature:'智慧灵动，代表变通、深沉和适应力'}
+    };
+    let aNat=wxRelMap[aDayWx]?wxRelMap[aDayWx].nature:'';
+    let bNat=wxRelMap[bDayWx]?wxRelMap[bDayWx].nature:'';
+    if(aDayWx&&bDayWx){
+        if(wxRelMap[aDayWx]&&wxRelMap[aDayWx].sheng===bDayWx){
+            wxDeep='<p style="margin:4px 0;font-size:11px;color:#aaa;">五行深度：乙方五行（'+bDayWx+'）生甲方（'+aDayWx+'）——乙方在关系中扮演滋养者，甲方是被滋养的一方。这种"你生我"的关系让甲方在相处中感受到源源不断的能量补给，但也需注意甲方不要过度依赖乙方的付出。</p>';
+        }else if(wxRelMap[bDayWx]&&wxRelMap[bDayWx].sheng===aDayWx){
+            wxDeep='<p style="margin:4px 0;font-size:11px;color:#aaa;">五行深度：甲方五行（'+aDayWx+'）生乙方（'+bDayWx+'）——甲方是关系的付出者和滋养方，乙方是受益者。甲方乐于付出的天性让关系充满温暖，但长期单向付出可能让甲方疲惫，乙方需学会回馈。</p>';
+        }else if(wxRelMap[aDayWx]&&wxRelMap[aDayWx].ke===bDayWx){
+            wxDeep='<p style="margin:4px 0;font-size:11px;color:#aaa;">五行深度：甲方五行（'+aDayWx+'）克乙方（'+bDayWx+'）——甲方在关系中更有主导力，但"克"也意味着约束和塑造。若甲方能善用这份影响力去帮助乙方成长，则克中有情；若只是压制，则关系难以持久。</p>';
+        }else if(wxRelMap[bDayWx]&&wxRelMap[bDayWx].ke===aDayWx){
+            wxDeep='<p style="margin:4px 0;font-size:11px;color:#aaa;">五行深度：乙方五行（'+bDayWx+'）克甲方（'+aDayWx+'）——乙方在关系中更有主见和掌控力。甲方可能会感到一定的压力，但如果乙方是出于关心而非控制，这种"克"反而能帮助甲方变得更好。</p>';
+        }else if(aDayWx===bDayWx){
+            wxDeep='<p style="margin:4px 0;font-size:11px;color:#aaa;">五行深度：双方日主同为<strong>'+aDayWx+'</strong>——'+aNat+'。你俩像照镜子，优点和缺点都高度一致。在一起时默契十足，但也容易因为同样的性格盲点而互相激化。学会互补而非复制，是这段关系的关键。</p>';
+        }else{
+            wxDeep='<p style="margin:4px 0;font-size:11px;color:#aaa;">五行深度：甲方日主属<strong>'+aDayWx+'</strong>（'+aNat+'），乙方日主属<strong>'+bDayWx+'</strong>（'+bNat+'）。两人五行各具特色，在一起形成独特的化学反应。理解彼此五行特质的差异，才能更好地欣赏对方的与众不同。</p>';
+        }
+        analysis+=wxDeep;
     }
 
     // 4.5 年柱纳音五行生克（合婚核心维度）
@@ -913,6 +941,59 @@ function calcHepan(){
     else if(aHas||bHas){analysis+='<p><strong>【配偶星匹配】</strong>一方配偶星显著，另一方偏隐。需要通过更多现实互动来确认彼此的定位，但缘分仍在。</p>';spouseScore=2;}
     else{analysis+='<p><strong>【配偶星匹配】</strong>双方配偶星均不显著，这可能意味着你们在一起更多是因为现实因素而非命定，但只要经营好也是佳偶。</p>';}
 
+    // 5.5 情感契合度深度分析
+    analysis+='<p><strong>【💞 情感契合度·五维分析】</strong></p><div style="margin:6px 0;font-size:11px;line-height:1.8;color:#bbb;">';
+    // 性格匹配
+    let aPersonality='',bPersonality='';
+    const personalityMap={
+        '甲':'正直刚健，有领导力，自尊心强。','乙':'温柔有韧性，心思细腻，善于合作。',
+        '丙':'热情似火，充满活力，慷慨大方。','丁':'外热内敛，细心周到，有艺术气质。',
+        '戊':'稳重厚道，诚信可靠，有包容力。','己':'温和细腻，善于规划，注重细节。',
+        '庚':'刚毅果断，雷厉风行，执行力强。','辛':'精致讲究，审美出众，思维敏锐。',
+        '壬':'聪明灵活，适应力强，心胸开阔。','癸':'灵气逼人，直觉敏锐，内敛深沉。'
+    };
+    aPersonality=personalityMap[S[aDS]]||'性格自成一体。';
+    bPersonality=personalityMap[S[bDS]]||'性格自成一体。';
+    let personalityMatch='';
+    if(GAN_HE[aDS]===bDS)personalityMatch='天干五合——性格天然互补，像两块奇妙的拼图。一个的强项正好是另一个的短板，相处起来轻松自然。';
+    else if(aDayWx===bDayWx)personalityMatch='日主五行相同——核心价值观高度一致，但性格雷同也容易针锋相对。学会"和而不同"是关键。';
+    else if(aDayWx&&bDayWx&&wxRelMap[aDayWx]&&wxRelMap[aDayWx].sheng===bDayWx)personalityMatch='五行相生——性格上天然形成和谐互动，彼此包容度高，相处时轻松少摩擦。';
+    else personalityMatch='性格各有特点，需要时间和耐心来磨合。差异不是问题，如何看待差异才是。';
+    analysis+='<p>✦ <strong>性格匹配：</strong>甲方（'+S[aDS]+'日主）——'+aPersonality+'乙方（'+S[bDS]+'日主）——'+bPersonality+personalityMatch+'</p>';
+    // 价值观
+    let valueMatch='';
+    if(aDayWx===bDayWx)valueMatch='五行相同——价值观高度一致。对未来生活的想象和追求方向相近，是"想到一块去"的伴侣类型。';
+    else if(GAN_HE[aDS]===bDS)valueMatch='天干五合——虽价值观不完全相同，但互相欣赏和吸引。你们的差异不是分歧而是互补，能把对方的世界观补得更完整。';
+    else if(aDayWx&&bDayWx&&wxRelMap[aDayWx]&&(wxRelMap[aDayWx].sheng===bDayWx||wxRelMap[bDayWx].sheng===aDayWx))valueMatch='五行相生——价值观有自然的融和趋势。一方愿意理解和接纳另一方的观念，求同存异的能力较强。';
+    else valueMatch='价值观存在一定差异，需要更多的沟通和换位思考。建立共同的"家庭愿景"有助于缩小差距。';
+    analysis+='<p>✦ <strong>价值观：</strong>'+valueMatch+'</p>';
+    // 生活习惯
+    let habitMatch='';
+    let aDe=SE[aDS],bDe=SE[bDS];
+    if(aDe==='火'&&bDe==='水')habitMatch='火日主节奏快、水日主习惯慢——生活步调容易不同频。建议：快的一方等等慢的一方，慢的一方也试着跟上节奏。';
+    else if(aDe==='水'&&bDe==='火')habitMatch='水日主节奏舒缓、火日主行动力强——日常生活容易"一个急一个缓"。建议：互相迁就，急事一起忙，闲时一起慢。';
+    else if(aDe==='木'&&bDe==='金')habitMatch='木日主随性、金日主讲究——家居习惯和整洁标准可能不同。建议：划定各自的空间，公区保持双方能接受的标准。';
+    else if(aDe==='金'&&bDe==='木')habitMatch='金日主注重规则、木日主随遇而安——生活秩序感不同。建议：制定一个双方都能接受的"家庭公约"。';
+    else if(aDe===bDe)habitMatch='同为'+aDe+'日主——生活习惯天然契合，作息和节奏容易同步。这是很多夫妻羡慕的"同频"。';
+    else habitMatch='双方五行无直接冲克——日常生活中小摩擦难免，但不会因为习惯差异而产生根本矛盾。';
+    analysis+='<p>✦ <strong>生活习惯：</strong>'+habitMatch+'</p>';
+    // 沟通方式
+    let commMatch='';
+    const commMap={木:'直接坦率，喜欢把话说清楚',火:'热情主动，表达欲强',土:'稳重务实，话不多但句句在点',金:'简洁利落，言辞精准',水:'细腻周全，善于倾听'};
+    if(aDe===bDe)commMatch='同为'+aDe+'——沟通风格一致，一个眼神就懂对方。但也要注意：同样的问题盲点——比如两个"火"都上头时容易吵过头。';
+    else commMatch='甲方偏<em>'+commMap[aDe]+'</em>，乙方偏<em>'+commMap[bDe]+'</em>——沟通风格互补。关键在于理解对方的表达方式而非改变对方。';
+    analysis+='<p>✦ <strong>沟通方式：</strong>'+commMatch+'</p>';
+    // 未来规划
+    let futureMatch='';
+    let aGuanCnt=aPillars.map(p=>getShiShen(aDS,p.s)).filter(s=>s==='正官'||s==='七杀').length;
+    let bGuanCnt=bPillars.map(p=>getShiShen(bDS,p.s)).filter(s=>s==='正官'||s==='七杀').length;
+    if(aGuanCnt>=2&&bGuanCnt>=2)futureMatch='双方命中官杀都重——都是事业心强的人。未来规划中，事业权重都很高。建议尽早商量"事业和家庭如何平衡"这个议题，它会是你们未来十年的核心命题。';
+    else if(aGuanCnt>=2||bGuanCnt>=2)futureMatch='一方事业心更强——未来规划中，事业和家庭的分工需要提前沟通。不是谁牺牲多，而是怎么配合让两个人的总和更大。';
+    else if(aDayWx&&bDayWx&&wxRelMap[aDayWx]&&wxRelMap[aDayWx].sheng===bDayWx)futureMatch='五行相生——对未来有天然的共识和信任。你们的方向感一致，即使具体路径不同，最终的目的地也是同一个。';
+    else futureMatch='双方对未来的想象需要多沟通、多对齐。建议每年做一次"关系复盘"，把各自的想法摆到桌面上。';
+    analysis+='<p>✦ <strong>未来规划：</strong>'+futureMatch+'</p>';
+    analysis+='</div>';
+
     // 6. 神煞互动
     let aShensha=getShenSha(aPillars),bShensha=getShenSha(bPillars);
     let shaScore=0;
@@ -958,13 +1039,13 @@ function calcHepan(){
     score=Math.min(98,Math.max(20,score));
 
     let scoreColor='#8bc34a',level='良缘',levelDesc='',events=[];
-    if(score>=85){scoreColor='#8bc34a';level='天作之合';levelDesc='你们是命中注定的缘分，八字契合度极高。在一起后无论事业、财运还是感情，都有1+1>2的效果，珍惜彼此，白头偕老。';
+    if(score>=85){scoreColor='#8bc34a';level='天作之合';levelDesc='你们的八字如琴瑟和鸣，契合度极高。日柱相生、五行互补、十神呼应——不是偶然，是命定的默契。在一起后事业财运感情三线齐飞，互为对方最好的风水。';
         events.push({p:92,t:'婚后感情持续升温，彼此成就'},{p:85,t:'事业上互相助力，共同成长'},{p:78,t:'财运同旺，合伙创业易成功'},{p:65,t:'育有子女后家庭更加和谐'},{p:40,t:'偶有小吵但很快和好'});}
-    else if(score>=70){scoreColor='#ff9800';level='佳偶天成';levelDesc='你们的八字匹配度良好，在一起有不错的化学反应。虽然有些小摩擦，但整体上是互相扶持的良缘。建议多些包容和沟通。';
+    else if(score>=70){scoreColor='#ff9800';level='佳偶天成';levelDesc='你们的八字像两棵并肩的树——各自有根，但枝桠在空中交握。虽然有需要磨合的棱角，但根基是稳的。多些耐心和包容，时间会让这份感情越来越醇。';
         events.push({p:82,t:'感情稳定，白头偕老概率高'},{p:70,t:'一方事业旺时能带动另一方'},{p:55,t:'需要磨合但越磨越好'},{p:40,t:'财务上各自独立更佳'},{p:25,t:'需要避免因小事累积矛盾'});}
-    else if(score>=55){scoreColor='#fdd835';level='尚可磨合';levelDesc='你们的八字有一些需要磨合的地方，但只要双方都愿意付出努力，缘分是可以经营的。了解彼此的命局差异，扬长避短。';
+    else if(score>=55){scoreColor='#fdd835';level='尚可磨合';levelDesc='你们的八字像两块不同硬度的木头——需要更多的打磨才能契合。不是没有缘分，而是缘分需要你们主动去"养"。理解彼此的命局差异，扬长避短，比强求改变对方更智慧。';
         events.push({p:70,t:'互相理解后关系逐步改善'},{p:55,t:'分开发展各自事业更稳定'},{p:45,t:'财务上保持相对独立'},{p:30,t:'情感上需要更多包容'},{p:20,t:'大运来助时关系会明显好转'});}
-    else{scoreColor='#ef5350';level='需要慎重';levelDesc='你们的八字契合度偏低，在一起可能会遇到不少困难和摩擦。如果选择在一起，需要有充分的心理准备，并付出更多的努力去经营。';
+    else{scoreColor='#ef5350';level='需要慎重';levelDesc='你们的八字契合度偏低，日柱或五行存在明显的冲突。在一起需要比寻常情侣付出更多心力去经营。如果选择同行，请记住：命盘给的是起点，终点由你们亲手写。';
         events.push({p:65,t:'需要刻意维护才能保持关系'},{p:50,t:'聚少离多可能是常态'},{p:40,t:'财务上容易产生分歧'},{p:30,t:'感情投入和回报不成正比'},{p:15,t:'正缘另有其人'});}
 
     let hpScoreHTML='<div style="text-align:center;padding:16px;">';
@@ -997,14 +1078,14 @@ function calcHepan(){
     //═ 感情走势三阶段 ═
     fuAnalysis+='<p><strong>【感情走势·三阶段】</strong></p>';
     fuAnalysis+='<p>✦ <strong>第一阶段（现在-3年）：</strong>';
-    if(ganHe[aDS]===bDS)fuAnalysis+='日干五合——你们有天然的化学反应，像认识了很久。多创造共同回忆，它们是未来平淡期的养分。</p>';
+    if(GAN_HE[aDS]===bDS)fuAnalysis+='日干五合——你们有天然的化学反应，像认识了很久。多创造共同回忆，它们是未来平淡期的养分。</p>';
     else if(score>=70)fuAnalysis+='虽无合化但多维匹配让初期顺畅自然。加分项是真诚坦率——你们都不玩心机。</p>';
     else if(score>=55)fuAnalysis+='你们会被对方身上和自己不同的部分吸引。享受当下但别忽略红灯。</p>';
     else fuAnalysis+='吸引是真实的，但"合适"和"喜欢"是两件事。激情褪去前看清底色是否兼容。</p>';
 
     fuAnalysis+='<p>✦ <strong>第二阶段（3-10年）：</strong>';
-    if(lh[aDB]===bDB)fuAnalysis+='日支六合——磨合期比大多数伴侣轻松。关键：谁管钱、谁管家、重大决策怎么定，把规则建好。</p>';
-    else if(ch[aDB]===bDB)fuAnalysis+='日支相冲——最大考验在磨合期。学会"争而不伤"——吵架可以，永远给对方一条回家的路。</p>';
+    if(ZHI_HE[aDB]===bDB)fuAnalysis+='日支六合——磨合期比大多数伴侣轻松。关键：谁管钱、谁管家、重大决策怎么定，把规则建好。</p>';
+    else if(ZHI_CHONG[aDB]===bDB)fuAnalysis+='日支相冲——最大考验在磨合期。学会"争而不伤"——吵架可以，永远给对方一条回家的路。</p>';
     else fuAnalysis+='关键在建立有效的沟通机制。真正的亲密是"我愿意让你看到我不好的一面"。</p>';
 
     fuAnalysis+='<p>✦ <strong>第三阶段（10年以上）：</strong>';
@@ -1014,13 +1095,13 @@ function calcHepan(){
 
     //═ 吸引力解码 ═
     let attract='';
-    if(ganHe[aDS]===bDS)attract='✨ 日干五合——最深层的精神吸引，像磁铁自然吸在一起。';
-    if(lh[aDB]===bDB)attract+=' 💫 日支六合——身体和情感层面的默契，无需多言。';
+    if(GAN_HE[aDS]===bDS)attract='✨ 日干五合——最深层的精神吸引，像磁铁自然吸在一起。';
+    if(ZHI_HE[aDB]===bDB)attract+=' 💫 日支六合——身体和情感层面的默契，无需多言。';
     if(!attract)attract='后天培养型——不是一见钟情的剧本，但越相处越离不开。慢热但恒温。';
     fuAnalysis+='<p><strong>【吸引力解码】</strong>'+attract+'</p>';
 
     //═ 沟通风格 ═
-    let aDe=SE[aDS],bDe=SE[bDS];
+    aDe=SE[aDS];bDe=SE[bDS];
     let commTips={木:'直接坦率但偶尔啰嗦',火:'热情主动但容易上头',土:'稳重务实但不太会哄人',金:'简洁利落但言辞犀利',水:'细腻周全但喜欢绕弯'};
     fuAnalysis+='<p><strong>【沟通风格】</strong>甲方（'+aDe+'）偏<em>'+commTips[aDe]+'</em>，乙方（'+bDe+'）偏<em>'+commTips[bDe]+'</em>。';
     fuAnalysis+=aDe===bDe?'同五行——秒懂对方但也容易针锋相对。一个说时另一个先听完再回应。</p>':'互补型——天然形成攻守平衡，一个说一个听、一个冲动一个冷静。</p>';
@@ -1036,8 +1117,8 @@ function calcHepan(){
     //═ 潜在冲突 ═
     fuAnalysis+='<p><strong>【⚡ 潜在冲突】</strong>';
     let cf=[];
-    if(ch[aDB]===bDB)cf.push('日支相冲——性格差异引发争执。"争事不争人"，就事论事不人身攻击。');
-    if(!ganHe[aDS]||ganHe[aDS]!==bDS)cf.push('日干不合——价值观可能有分歧。多找共同目标和兴趣。');
+    if(ZHI_CHONG[aDB]===bDB)cf.push('日支相冲——性格差异引发争执。"争事不争人"，就事论事不人身攻击。');
+    if(!GAN_HE[aDS]||GAN_HE[aDS]!==bDS)cf.push('日干不合——价值观可能有分歧。多找共同目标和兴趣。');
     if(aPillars[0].b===bPillars[0].b)cf.push('年支相同——双方都强势或都被动，需要明确分工。');
     fuAnalysis+=(cf.length?cf.join(' '):'整体匹配度不错，没有明显硬伤。功课是"经营"而非"修复"。')+'</p>';
 
@@ -1054,11 +1135,37 @@ function calcHepan(){
     else if(aCh==='伤官'||bCh==='伤官')fuAnalysis+='时柱带伤官——子女聪明有主见，小时候需多些耐心，长大后才华出众。';
     else fuAnalysis+='子女运需结合大运来看，大运逢食伤之年缘分自来。';
     fuAnalysis+='</p>';
+    // 子女缘分深度分析
+    fuAnalysis+='<p><strong>【👼 子女缘分·深度分析】</strong></p><div style="margin:6px 0;font-size:11px;line-height:1.8;color:#bbb;">';
+    let aChildStars=aPillars.map(p=>getShiShen(aDS,p.s)).filter(s=>s==='食神'||s==='伤官');
+    let bChildStars=bPillars.map(p=>getShiShen(bDS,p.s)).filter(s=>s==='食神'||s==='伤官');
+    let aChildCount=aChildStars.length,bChildCount=bChildStars.length;
+    // 甲方子女缘分
+    if(aChildCount>=2)fuAnalysis+='<p>✦ 甲方命局中食伤星<strong>旺盛</strong>（共'+aChildCount+'个），天生子女缘分深厚。将来对孩子有天然的亲和力，教育方式偏向鼓励和引导。';
+    else if(aChildCount===1)fuAnalysis+='<p>✦ 甲方命局中食伤星<strong>适中</strong>，子女缘分正常。在合适的时机（大运逢食伤之年）自然得子，教育上理性与感性兼顾。';
+    else fuAnalysis+='<p>✦ 甲方命局中食伤星<strong>不显</strong>，子女缘分需结合大运催动。但"不显"不代表没有——往往大运一到，缘分来得更珍惜和感恩。';
+    // 乙方子女缘分
+    if(bChildCount>=2)fuAnalysis+='乙方食伤星<strong>旺盛</strong>（共'+bChildCount+'个），同样是天生好父母。两人结合后子女运叠加，家庭氛围热闹温馨。</p>';
+    else if(bChildCount===1)fuAnalysis+='乙方食伤星<strong>适中</strong>。两人结合后子女运互补，一方若缘分稍弱，另一方能补上。</p>';
+    else fuAnalysis+='乙方食伤星<strong>不显</strong>。两人结合后，在大运流年配合下子女缘分可期。不必焦虑，缘分到来时自然圆满。</p>';
+    // 合盘子女特质
+    let aHrStem=S[aPillars[3].s],bHrStem=S[bPillars[3].s];
+    let childTrait='';
+    if(aDayWx==='火'||bDayWx==='火')childTrait+='火旺的家庭氛围培养出的孩子通常性格开朗、自信大方。';
+    if(aDayWx==='水'||bDayWx==='水')childTrait+='水旺的家庭氛围培养出的孩子通常聪明灵活、善于变通。';
+    if(aDayWx==='木'||bDayWx==='木')childTrait+='木旺的家庭氛围培养出的孩子通常有创造力、善良正直。';
+    if(aDayWx==='金'||bDayWx==='金')childTrait+='金旺的家庭氛围培养出的孩子通常果断坚毅、有原则。';
+    if(aDayWx==='土'||bDayWx==='土')childTrait+='土旺的家庭氛围培养出的孩子通常稳重可靠、踏实努力。';
+    if(!childTrait)childTrait='你们的孩子将融合双方性格优点，取长补短。';
+    fuAnalysis+='<p>✦ <strong>孩子特质预估：</strong>'+childTrait+'</p>';
+    // 最佳生育时机
+    fuAnalysis+='<p>✦ <strong>最佳生育时机：</strong>大运或流年逢食神、伤官之年份为最佳生育窗口期。若双方时柱均带食伤，则生育相对顺遂；若均不带，可重点关注双方大运中食伤星出现的时间段，提前做好备孕规划。</p>';
+    fuAnalysis+='</div>';
 
     fuAnalysis+='<p><strong>【💡 关系建议】</strong>';
     let tl=[];
-    if(!ganHe[aDS]||ganHe[aDS]!==bDS)tl.push('多做共同兴趣的事，创造属于你们俩的小宇宙。');
-    if(ch[aDB]===bDB)tl.push('日支相冲——给彼此留够独处时间，比别的伴侣多一个缓冲空间。');
+    if(!GAN_HE[aDS]||GAN_HE[aDS]!==bDS)tl.push('多做共同兴趣的事，创造属于你们俩的小宇宙。');
+    if(ZHI_CHONG[aDB]===bDB)tl.push('日支相冲——给彼此留够独处时间，比别的伴侣多一个缓冲空间。');
     tl.push('定期"复盘"感情，像对待最重要的工作一样认真。');
     fuAnalysis+=tl.join(' ')+'</p>';
 
@@ -1080,17 +1187,40 @@ function calcHepan(){
     else fuAnalysis+='双方官杀相当——你们在关系中倾向于平等协商。大事一起定，小事各自管，这种模式最稳定。但偶尔也需要一个人站出来做最后决定。</p>';
 
     //═ 最佳婚期 ═
-    fuAnalysis+='<p><strong>【💒 最佳婚期预测】</strong>';
+    fuAnalysis+='<p><strong>【💒 合作/婚姻最佳时机】</strong>';
     let now=new Date().getFullYear();
     let goodYears=[];
     for(let i=0;i<10;i++){
         let cy=now+i;
         let cyGZ=getYearGZ(cy,6,15);
         let cyDe=SE[cyGZ.s];
-        if(cyDe===SE[aDS]||cyDe===SE[bDS]||(ganHe[aDS]!==undefined&&cyDe===SE[bDS]))goodYears.push(cy);
+        if(cyDe===SE[aDS]||cyDe===SE[bDS]||(GAN_HE[aDS]!==undefined&&cyDe===SE[bDS]))goodYears.push(cy);
     }
-    if(goodYears.length>0)fuAnalysis+='未来十年中，<strong>'+goodYears.slice(0,3).join('年、')+'年</strong>是你们这段关系最适合走入婚姻或升级关系（同居/订婚）的年份。这些年份五行气场对双方都友好，婚后稳定性更高。';
-    else fuAnalysis+='选在双方日柱纳音五行相生的年份结婚最佳。具体年份可结合"流年详批"功能查看。</p>';
+    if(goodYears.length>0){
+        fuAnalysis+='未来十年中，<strong>'+goodYears.slice(0,3).join('年、')+'年</strong>是你们这段关系最适合走入婚姻或升级关系（同居/订婚）的年份。这些年份的五行气场对双方都友好，婚后稳定性更高。</p>';
+    }else{
+        fuAnalysis+='选在双方日柱纳音五行相生的年份结婚最佳。具体年份可结合"流年详批"功能查看。</p>';
+    }
+    // 最佳时机深度建议
+    fuAnalysis+='<div style="margin:6px 0;font-size:11px;line-height:1.8;color:#bbb;">';
+    fuAnalysis+='<p>✦ <strong>时机选择要诀：</strong></p>';
+    // 季节建议
+    let bestSeason='';
+    let aWxNeed='',bWxNeed='';
+    if(aDayWx&&wxRelMap[aDayWx])aWxNeed=wxRelMap[aDayWx].sheng;
+    if(bDayWx&&wxRelMap[bDayWx])bWxNeed=wxRelMap[bDayWx].sheng;
+    const wxSeason={木:'春季（2-4月）',火:'夏季（5-7月）',土:'四季末（3月、6月、9月、12月）',金:'秋季（8-10月）',水:'冬季（11-1月）'};
+    if(aDayWx&&wxSeason[aDayWx])bestSeason=wxSeason[aDayWx]+'或';
+    if(bDayWx&&wxSeason[bDayWx])bestSeason+=wxSeason[bDayWx];
+    fuAnalysis+='<p>✦ <strong>最佳季节：</strong>'+bestSeason+'。在双方日主五行当令的季节举办婚礼或开启合作，气场最旺，事半功倍。</p>';
+    // 避开冲突年份
+    if(ZHI_CHONG[aDB]===bDB){
+        fuAnalysis+='<p>✦ <strong>特别提醒：</strong>日支相冲的年份（如'+B[aDB]+'年与'+B[bDB]+'年）需特别注意——这些年份关系容易紧张，不适合做重大决定（如结婚、创业合伙）。反之，'+B[aDB]+'与'+B[bDB]+'六合之年（逢'+B[ZHI_HE[aDB]]+'年），则是修复和升级关系的黄金窗口。</p>';
+    }
+    // 合作时机
+    fuAnalysis+='<p>✦ <strong>合作/创业时机：</strong>若考虑共同创业或事业合作，最佳时机在双方八字中"官星"或"财星"同时被流年引动的年份。具体而言——男方逢正财/偏财之年、女方逢正官/七杀之年，合作关系最容易出成果。</p>';
+    fuAnalysis+='<p>✦ <strong>感情升级信号：</strong>当流年干支与双方日柱发生以下关系时，是感情进入下一阶段的天然信号——天干五合（关系升温）、地支六合（默契加深）、流年桃花入命（浪漫加分）。关注这些年份，顺势而为比强求更有效。</p>';
+    fuAnalysis+='</div>';
 
     //═ 吵架与和解 ═
     fuAnalysis+='<p><strong>【💢 吵架与和解模式】</strong>';
@@ -1156,8 +1286,20 @@ function calcZiwei(){
     let hh=parseInt(document.getElementById('zwHour').value);
     let mm=parseInt(document.getElementById('zwMin').value)||0;
     let dayGZ_=getDayGZ(new Date(y,m-1,d));
-    let ziweiPos=((dayGZ_.b*5+dayGZ_.s*7+hh)%12+12)%12;
-    let mingPos=(hh+2)%12;
+    let yGZ=getYearGZ(y,m,d); // 年柱用于五行局和四化
+    let hb_zw=getHourBranch(hh);
+    let mingPos=((m+1)%12 - hb_zw + 12)%12; // 命宫：寅起正月→顺数月→逆数到时
+    // ── 五行局（命宫纳音→局数）──
+    let huJiBase=[2,4,6,8,0]; // 五虎遁：甲己→丙(2),乙庚→戊(4),丙辛→庚(6),丁壬→壬(8),戊癸→甲(0)
+    let mingGongStem=(huJiBase[yGZ.s%5]+(mingPos-2+12))%10; // 命宫天干 = 五虎遁基数 + (命宫地支-寅)
+    let mingNayin=getNayin(mingGongStem,mingPos);
+    let nayinWx={金:4,木:3,水:2,火:6,土:5};
+    let juShu=nayinWx[mingNayin.match(/[金木水火土]/)?.[0]]||2; // 五行局数
+    // ── 紫微星（标准算法：生日/局数，从寅起）──
+    let ziweiPos=(Math.ceil(d/juShu)+1)%12; // 寅=2, ceil(d/juShu)格从寅起
+    // ── 天府（紫微-天府固定映射）──
+    let tianfuMap={2:4,3:5,4:2,5:3,6:0,7:1,8:10,9:11,10:8,11:9,0:6,1:7};
+    let tianfuPos=tianfuMap[ziweiPos];
     let gongs=[];
     for(let i=0;i<12;i++){
         let gIdx=(mingPos-i+12)%12;
@@ -1170,15 +1312,75 @@ function calcZiwei(){
         if((i+ziweiPos+3)%12===0)g.stars.push('武曲');
         if((i+ziweiPos+4)%12===0)g.stars.push('天同');
         if((i+ziweiPos+5)%12===0)g.stars.push('廉贞');
-        if((i+ziweiPos+6)%12===0)g.stars.push('天府');
-        if((i+ziweiPos+7)%12===0)g.stars.push('太阴');
-        if((i+ziweiPos+8)%12===0)g.stars.push('贪狼');
-        if((i+ziweiPos+9)%12===0)g.stars.push('巨门');
-        if((i+ziweiPos+10)%12===0)g.stars.push('天相');
-        if((i+ziweiPos+11)%12===0)g.stars.push('天梁');
-        if((i+ziweiPos+2+dayGZ_.s)%12===0)g.stars.push('七杀');
-        if((i+ziweiPos+9+dayGZ_.b)%12===0)g.stars.push('破军');
+        // 天府系8星（从天府位置起顺排）
+        if((i+tianfuPos)%12===0)g.stars.push('天府');
+        if((i+tianfuPos+1)%12===0)g.stars.push('太阴');
+        if((i+tianfuPos+2)%12===0)g.stars.push('贪狼');
+        if((i+tianfuPos+3)%12===0)g.stars.push('巨门');
+        if((i+tianfuPos+4)%12===0)g.stars.push('天相');
+        if((i+tianfuPos+5)%12===0)g.stars.push('天梁');
+        if((i+tianfuPos+6)%12===0)g.stars.push('七杀');
+        if((i+tianfuPos+7)%12===0)g.stars.push('破军');
     });
+    // ── 辅星安星 ──
+    // 左辅：正月起辰(4)，顺数
+    let zfPos=(m+3)%12;
+    // 右弼：正月起戌(10)，逆数  
+    let ybPos=(14-m)%12;
+    // 文昌：戌(10)起子时逆数
+    let wcPos=(22-hh)%12;
+    // 文曲：辰(4)起子时顺数
+    let wqPos=(hh+4)%12;
+    // 天魁天钺：年干定
+    let tkPos={0:1,1:0,2:11,3:10,4:10,5:10,6:9,7:8,8:8,9:8}[yGZ.s];
+    let tyPos={0:7,1:6,2:5,3:4,4:4,5:4,6:3,7:2,8:2,9:2}[yGZ.s];
+    // 禄存：年干定
+    let lcPos={0:2,1:3,2:4,3:5,4:6,5:7,6:8,7:9,8:0,9:1}[yGZ.s];
+    // 擎羊：禄存前一位
+    let qyPos=(lcPos+11)%12;
+    // 陀罗：禄存后一位
+    let tlPos=(lcPos+1)%12;
+    // 火星铃星：年支+时辰综合（简化：年支三合起+时辰顺/逆）
+    let hxSan={0:0,1:0,2:2,3:2,4:4,5:4,6:6,7:6,8:8,9:8,10:10,11:10};
+    let hxBase=hxSan[yGZ.b]||0;
+    let hxPos=(hxBase+hh)%12;
+    // 铃星：火星三合对宫起，顺数到时辰
+    let lxPos=(hxBase+6+hh)%12;
+    // 地空：亥(11)起子时逆数
+    let dkPos=(23-hh)%12;
+    // 地劫：亥(11)起子时顺数
+    let djPos=(hh+11)%12;
+    // 天马：月支三合相冲位
+    let tmMap={2:8,3:9,4:10,5:11,6:0,7:1,8:2,9:3,10:4,11:5,0:6,1:7};
+    let tmPos=tmMap[yGZ.b];
+
+    let fuStars=['文昌','文曲','左辅','右弼','天魁','天钺','禄存','天马','擎羊','陀罗','火星','铃星','地空','地劫'];
+    let fuPos=[wcPos,wqPos,zfPos,ybPos,tkPos,tyPos,lcPos,tmPos,qyPos,tlPos,hxPos,lxPos,dkPos,djPos];
+    let fuMean={
+        '文昌':'📖 才学之星，主科甲功名，利考试深造',
+        '文曲':'🎵 才艺之星，主文艺天赋，口才表达',
+        '左辅':'🤝 辅佐吉星，贵人相助，左膀右臂',
+        '右弼':'💪 助力之星，幕后支持，化险为夷',
+        '天魁':'👑 天乙贵人之首，科甲成名，遇难呈祥',
+        '天钺':'🌟 阴贵之星，暗中有助，女贵人运强',
+        '禄存':'💰 财禄之星，主财富积累，衣食无忧',
+        '天马':'🐎 驿马星动，主奔波变动，异地发展',
+        '擎羊':'⚔ 刑伤之星，刚强好胜，需防冲突',
+        '陀罗':'⏳ 拖延之星，好事多磨，持之以恒',
+        '火星':'🔥 暴发之星，来得快去得猛，冲动是敌',
+        '铃星':'🔔 暗火之星，内心焦灼，需学会放松',
+        '地空':'💨 空灵之星，思想跳跃，不喜束缚',
+        '地劫':'🌪 波折之星，大器晚成，柳暗花明'
+    };
+    let fuCat={文昌:'吉',文曲:'吉',左辅:'吉',右弼:'吉',天魁:'吉',天钺:'吉',禄存:'吉',天马:'中',擎羊:'煞',陀罗:'煞',火星:'煞',铃星:'煞',地空:'煞',地劫:'煞'};
+    for(let i=0;i<fuStars.length;i++){
+        let gi=fuPos[i];
+        if(gi!==undefined&&gi>=0&&gi<12){
+            let g=gongs.find(g=>g.idx===gi);
+            if(g)g.stars.push(fuStars[i]+':'+fuCat[fuStars[i]]);
+        }
+    }
+
     let gridHTML='';
     gongs.forEach(g=>{
         let starText=g.stars.length>0?g.stars.join(' '):'-';
@@ -1200,18 +1402,18 @@ function calcZiwei(){
 
     // 十二宫逐一解读
     let gongDetail={
-        '命宫':'命宫为十二宫之首，代表先天命格、性格特质和一生运势基调。',
-        '兄弟':'兄弟宫主手足缘分、朋友关系以及与同辈的互动。',
-        '夫妻':'夫妻宫看婚姻缘分、配偶条件和婚后相处模式。',
-        '子女':'子女宫代表子女缘分、生育状况和与晚辈的关系。',
-        '财帛':'财帛宫主一生财运、金钱观念和理财能力。',
-        '疾厄':'疾厄宫看身体健康、疾病倾向和意外灾厄。',
-        '迁移':'迁移宫主外出发展、旅行运和社会适应能力。',
-        '交友':'交友宫看人脉关系、下属缘分和合作伙伴质量。',
-        '官禄':'官禄宫主事业发展、工作成就和社会地位。',
-        '田宅':'田宅宫看房产运、居家环境和家庭背景。',
-        '福德':'福德宫主精神享受、晚年福气和内心世界。',
-        '父母':'父母宫代表父母缘分、长辈关系和上司运。'
+        '命宫':'命宫为十二宫之首，是整张命盘的灵魂所在。代表先天命格、性格特质和一生运势基调，也是自我认知和对外形象的宫位。命宫强旺则一生根基稳固，命宫主星决定你的天赋与人生主线。',
+        '兄弟':'兄弟宫主手足缘分、朋友关系以及与同辈的互动模式。此宫也反映兄弟姐妹的个数、缘分深浅，以及你在团队中的协作能力。兄弟宫吉则手足互助、朋友众多；凶则兄弟姐妹缘薄或易有口舌之争。',
+        '夫妻':'夫妻宫看婚姻缘分、配偶条件和婚后相处模式。此宫也反映你对感情的期望和择偶标准，以及婚姻中的幸福感。夫妻宫吉则配偶贤良、婚姻美满；凶则感情波折、需经历考验方能稳定。',
+        '子女':'子女宫代表子女缘分、生育状况和与晚辈的关系。此宫也关联你的创造力和享乐方式，包括兴趣爱好和恋爱中的浪漫程度。子女宫吉则子女聪慧孝顺；凶则不易受孕或亲子关系需更多耐心经营。',
+        '财帛':'财帛宫主一生财运、金钱观念和理财能力。此宫反映赚钱方式和金钱流动的规律，而非财富总量——有钱命还需好财帛宫来承接。财帛宫吉则财运亨通、手头宽裕；凶则需靠后天理财来弥补先天不足。',
+        '疾厄':'疾厄宫看身体健康、疾病倾向和意外灾厄。此宫也反映你的抗压能力和面对危机时的韧性。疾厄宫吉则身体康健、灾祸远离；凶则需注意对应脏腑的保养，定期体检是保身之道。',
+        '迁移':'迁移宫主外出发展、旅行运和社会适应能力。此宫也代表你在外地的表现和机遇，是命宫的"对外窗口"。迁移宫吉则适合离乡发展、出外遇贵人；凶则外出需谨慎，宜守不宜攻。',
+        '交友':'交友宫看人脉关系、下属缘分和合作伙伴质量。此宫也反映你的人际魅力和社会地位的外部支撑。交友宫吉则得道多助、贵人环绕；凶则需防小人暗算，择友宜精不宜多。',
+        '官禄':'官禄宫主事业发展、工作成就和社会地位。此宫是命宫在事业维度的延伸，代表你能走多高、走多远。官禄宫吉则事业有成、步步高升；凶则事业道路曲折，需靠坚持和智慧破局。',
+        '田宅':'田宅宫看房产运、居家环境和家庭背景。此宫也代表你的安全感和归属感，是"安居"方能"乐业"的根基。田宅宫吉则置业顺利、居住舒适；凶则需关注家庭关系和谐度，房产运需耐心经营。',
+        '福德':'福德宫主精神享受、晚年福气和内心世界。此宫是前世福德的体现，也代表你如何寻找快乐和内在平静。福德宫吉则心态乐观、老有所乐；凶则需刻意培养正向思维，多参与滋养心灵的活动。',
+        '父母':'父母宫代表父母缘分、长辈关系和上司运。此宫也关联你的学历背景和早期成长环境，是"根"与"源"的象征。父母宫吉则父母康宁、长辈提携；凶则需主动修复与长辈的关系，自立自强是长久之道。'
     };
     analysis+='<p><strong>【十二宫逐宫解读】</strong></p>';
     analysis+='<div style="margin:6px 0;font-size:11px;line-height:1.8;color:#bbb;">';
@@ -1221,21 +1423,41 @@ function calcZiwei(){
     });
     analysis+='</div>';
 
-    // 四化分析
-    let sihua=['化禄','化权','化科','化忌'];
-    let sihuaGongs=[(dayGZ_.s+mingPos)%12,(dayGZ_.b+mingPos)%12,(hh+mingPos)%12,(mm+mingPos)%12];
-    let sihuaDetail={
-        '化禄':'主福禄、财富、享受——此宫领域顺遂如意有加持',
-        '化权':'主权势、掌控、竞争——此宫领域需靠实力争取',
-        '化科':'主名声、才艺、贵人——此宫领域易得人赏识',
-        '化忌':'主困扰、压力、不足——此宫领域需格外用心经营'
-    };
-    let sihuaText='<p><strong>【四化分布】</strong></p><div style="margin:6px 0;font-size:11px;line-height:1.8;">';
+    // 辅星总览
+    let hasFu=gongs.some(g=>g.stars.some(s=>s.includes(':')));
+    if(hasFu){
+        analysis+='<p><strong>【辅星总览】</strong></p><div style="margin:6px 0;font-size:11px;line-height:1.8;">';
+        let jiStars=[],shaStars=[];
+        gongs.forEach(g=>{
+            g.stars.forEach(s=>{
+                if(s.includes(':')){
+                    let parts=s.split(':'),sn=parts[0],sc=parts[1];
+                    let fn=sn+(fuMean[sn]?' '+fuMean[sn]:'');
+                    if(sc==='吉')jiStars.push('<span style="color:#8bc34a;">'+g.name+'：'+fn+'</span>');
+                    else if(sc==='煞')shaStars.push('<span style="color:#ef5350;">'+g.name+'：'+fn+'</span>');
+                }
+            });
+        });
+        if(jiStars.length>0)analysis+='<p>🟢 <strong>吉星加持：</strong>'+jiStars.join('<br>')+'</p>';
+        if(shaStars.length>0)analysis+='<p>🔴 <strong>煞星考验：</strong>'+shaStars.join('<br>')+'</p>';
+        let jiCount=jiStars.length,shaCount=shaStars.length;
+        if(jiCount>shaCount+2)analysis+='<p>命盘吉星明显多于煞星——先天福泽深厚，人生道路相对平坦。善用吉星的优势领域，事半功倍。</p>';
+        else if(shaCount>jiCount+2)analysis+='<p>煞星偏重——人生磨砺较多，但煞星也意味着"不平凡"。每一颗煞星都是一道淬炼，跨过去就是升级。大器晚成型。</p>';
+        else analysis+='<p>吉煞均衡——有福气也有考验，人生不会太顺也不会太苦。这是最常见也最健康的配置：既有贵人相助，也有磨砺让你成长。</p>';
+        analysis+='</div>';
+    }
+
+    // 四化（标准年干查表法）
+    let sihuaStars={0:['廉贞','破军','武曲','太阳'],1:['天机','天梁','紫微','太阴'],2:['天同','天机','文昌','廉贞'],3:['太阴','天同','天机','巨门'],4:['贪狼','太阴','右弼','天机'],5:['武曲','贪狼','天梁','文曲'],6:['太阳','武曲','太阴','天同'],7:['巨门','太阳','文曲','文昌'],8:['天梁','紫微','左辅','武曲'],9:['破军','巨门','太阴','贪狼']};
+    let sihuaName=['化禄','化权','化科','化忌'];
+    let sihuaDetail={'化禄':'主福禄财富享受','化权':'主权势掌控竞争','化科':'主名声才艺贵人','化忌':'主困扰压力不足'};
+    let sihuaText='<p><strong>【四化飞星】</strong>生年天干<strong>'+S[yGZ.s]+'</strong></p><div style="margin:6px 0;font-size:11px;line-height:1.8;">';
+    let stars4=sihuaStars[yGZ.s]||['','','',''];
     for(let i=0;i<4;i++){
-        let gongIdx=sihuaGongs[i]%12;
-        let gongName=ZW_GONG[gongIdx];
+        let starName=stars4[i],foundGong='';
+        gongs.forEach(g=>{if(g.stars.some(s=>s.startsWith(starName)))foundGong=g.name;});
         let isJi=(i===3);
-        sihuaText+='<span style="color:'+(isJi?'#ef5350':'#8bc34a')+';">'+sihua[i]+'在<strong>'+gongName+'</strong> — '+sihuaDetail[sihua[i]]+'</span><br>';
+        sihuaText+='<span style="color:'+(isJi?'#ef5350':'#8bc34a')+';">'+sihuaName[i]+'：<strong>'+starName+'</strong>'+(foundGong?'在'+foundGong+'宫':'')+' — '+sihuaDetail[sihuaName[i]]+'</span><br>';
     }
     sihuaText+='</div>';
     analysis+=sihuaText;
@@ -1244,7 +1466,36 @@ function calcZiwei(){
     let mingStars=gongs[0].stars;
     let caiStars=gongs[4].stars;
     let guanStars=gongs[8].stars;
-    analysis+='<p><strong>【三方四正】</strong>命宫（'+mingStars.join(' ')+'）、财帛宫（'+caiStars.join(' ')+'）、官禄宫（'+guanStars.join(' ')+'）三合呼应，构成命运核心三角。</p>';
+    analysis+='<p><strong>【三方四正】</strong>命宫、财帛宫、官禄宫三合呼应，构成命运核心三角。此为紫微斗数最重要的宫位关联——命宫为根基看我是什么样的人，财帛宫为手段看我如何获取资源，官禄宫为舞台看我能走多高多远。</p>';
+    // 三方四正深度分析
+    analysis+='<p><strong>【三方四正·深度解读】</strong></p><div style="margin:6px 0;font-size:11px;line-height:1.8;color:#bbb;">';
+    // 分析命宫-财帛关系
+    let mingMain=mingStars.length>0?mingStars[0]:'';
+    let caiMain=caiStars.length>0?caiStars[0]:'';
+    let guanMain=guanStars.length>0?guanStars[0]:'';
+    if(mingMain.includes('紫微')||mingMain.includes('天府')){
+        analysis+='<p>命宫带帝星/库星，财帛宫为<strong>'+(caiMain||'无主星')+'</strong>——你天生具有掌控资源和驾驭财富的气场。命宫帝星坐镇，财帛宫为辅翼，适合做资源整合者而非单纯打工者。若财帛宫亦有强星（如武曲、太阴），则财富积累事半功倍。</p>';
+    }else if(mingMain.includes('天机')||mingMain.includes('贪狼')){
+        analysis+='<p>命宫带智星/桃花星，财帛宫为<strong>'+(caiMain||'无主星')+'</strong>——财富多靠智慧和人际而来。你赚钱的方式灵活多变，不拘一格，但也容易"来得快去得也快"。财帛宫若有库星（天府）或财星（武曲）坐镇，才能将智慧变现为稳定财富。</p>';
+    }else if(mingMain.includes('太阳')||mingMain.includes('武曲')){
+        analysis+='<p>命宫带阳性刚星，财帛宫为<strong>'+(caiMain||'无主星')+'</strong>——赚钱靠的是硬实力和执行力。太阳主散财也主名声变现，武曲为财星自带金钱嗅觉。三方组合若协调，事业成就与财富积累同步增长。</p>';
+    }else{
+        analysis+='<p>命宫主星为<strong>'+(mingMain||'无主星')+'</strong>，三方四正中财帛宫为<strong>'+(caiMain||'无主星')+'</strong>、官禄宫为<strong>'+(guanMain||'无主星')+'</strong>。三宫需互相呼应——命强财弱则怀才不遇，财强命弱则有钱但无方向，官强命弱则忙而少成。平衡方为上格。</p>';
+    }
+    // 分析命宫-官禄关系
+    if(guanMain.includes('紫微')||guanMain.includes('天相')||guanMain.includes('天府')){
+        analysis+='<p>官禄宫有<strong>'+guanMain+'</strong>加持——事业上有贵人提携，适合在体制内或大平台发展。命宫与官禄宫相呼应，事业发展顺遂，能在合适的位置上发光发热。</p>';
+    }else if(guanMain.includes('七杀')||guanMain.includes('破军')||guanMain.includes('贪狼')){
+        analysis+='<p>官禄宫带<strong>'+guanMain+'</strong>——事业上不走寻常路，适合创业、竞争性强或需要开拓精神的行业。杀破狼格局意味着人生必有大的转折和突破，关键在于乘风破浪、顺势而为。</p>';
+    }else if(guanMain){
+        analysis+='<p>官禄宫主星<strong>'+guanMain+'</strong>——事业风格与主星特质深度绑定。结合命宫主星来看，若命宫刚而官禄柔，则适合做"外刚内柔"的管理者；反之外柔内刚则适合在大机构中做核心执行者。</p>';
+    }
+    // 三合呼应总结
+    let sameElem=0;
+    if(mingMain&&caiMain){for(let k in ZW_STARS_MAP){if(ZW_STARS_MAP[k]===mingMain.replace('(帝)','')||ZW_STARS_MAP[k]===caiMain.replace('(帝)',''))sameElem++;}}
+    if(mingMain&&guanMain){for(let k in ZW_STARS_MAP){if(ZW_STARS_MAP[k]===mingMain.replace('(帝)','')||ZW_STARS_MAP[k]===guanMain.replace('(帝)',''))sameElem++;}}
+    analysis+='<p><em>三方平衡诀：命宫定格局，财帛定富贫，官禄定贵贱。三宫得位且互济者，一生富贵双全；一宫独强而两宫弱，则需靠后天努力来补足短板。你的命盘三方配置，建议将精力分配为——'+(mingMain?'命宫打底（自我成长占四成）、':'')+(caiMain?'财帛开路（理财能力占三成）、':'')+(guanMain?'官禄拔高（事业发展占三成）。':'')+'</em></p>';
+    analysis+='</div>';
 
     // 命宫详细解读（老道士风格）
     if(mingStars.includes('紫微(帝)')){
@@ -1289,7 +1540,73 @@ function calcZiwei(){
     else{analysis+='事业发展需结合命宫和财帛宫综合判断，大限流转是关键。';}
     analysis+='</p>';
 
-    // 四化飞星
+    // 四化飞星（含每颗星的详细含义）
+    const SIHUA_DETAIL={
+        '廉贞化禄':'廉贞为次桃花星化禄——桃花变财源，人际关系和艺术才华能直接变现。人缘财运亨通，适合从事与人打交道的行业。但也需防桃花过旺反成负累。',
+        '破军化权':'破军为先锋星化权——破旧立新的行动力和决断力大增。适合开拓新市场、改革旧体制，能在混乱中建立新秩序。但需注意勿因过度强势而伤害合作关系。',
+        '武曲化科':'武曲为财星化科——理财能力和专业技能获得社会认可，名声与财富同步增长。适合在金融、技术领域深耕，靠真本事扬名。',
+        '太阳化忌':'太阳为光明之星化忌——阳光被遮蔽，事业上易遇阻碍或上司不赏识。需防眼疾或心血管问题。建议低调行事，在幕后积蓄力量，待云开见日。',
+        '天机化禄':'天机为智谋星化禄——智慧和策划能力是财富之源，适合从事咨询、IT、写作等脑力工作。思维敏捷、点子变钱，但需防思虑过多导致行动迟缓。',
+        '天梁化权':'天梁为荫星化权——长辈缘和贵人运转化为实际权力。适合在公益、医疗、教育领域担任管理岗位，以德服人、以善聚众。',
+        '紫微化科':'紫微为帝星化科——领导能力和个人魅力获得广泛认可，名声在外。适合担任公众人物或企业领袖，但需谦虚自持以免高处不胜寒。',
+        '太阴化忌':'太阴为母星化忌——情绪易陷入低谷，需注意心理健康和女性亲属的健康。感情上易有暗伤和误解，建议坦诚沟通、不积压情绪。',
+        '天同化禄':'天同为福星化禄——福气和享受直接带来财富，生活品质和财运同步提升。适合餐饮、旅游、休闲产业。知足常乐，财来自有方。',
+        '文昌化科':'文昌为文星化科——学业和文采获得社会认可，考试运佳、文章出众。适合学术、出版、传媒行业，靠知识和才华赢得尊重。',
+        '廉贞化忌':'廉贞化忌——桃花变劫，情感纠葛易成困扰。需防因情破财或因人际纠纷影响事业。收敛锋芒、洁身自好是化解之道。',
+        '太阴化禄':'太阴为田宅主化禄——房产运和家庭财运亨通，适合投资不动产。女性贵人和母亲缘分深厚，温柔细腻的性格带来财富机会。',
+        '天同化权':'天同为福星化权——在轻松愉快的氛围中获得掌控力。适合创意产业或团队管理，不靠威严而靠魅力服人。',
+        '天机化科':'天机为智星化科——智慧才华获得社会认可，学术和技术成就突出。适合做行业专家或技术权威，名声来自真才实学。',
+        '巨门化忌':'巨门为暗星化忌——口舌是非和暗中阻力增多。需防小人暗算和言语误会，建议谨言慎行、不参与是非。消化系统也需注意保养。',
+        '贪狼化禄':'贪狼为桃花星化禄——人缘、桃花、才艺全面开花。社交能力是最大财富来源，适合演艺、公关、销售。但需节制欲望，好运也怕贪多嚼不烂。',
+        '太阴化权':'太阴化权——以柔克刚的管理风格，不怒自威。适合女性领导或需要细腻手腕的管理岗位。家庭和事业的平衡能力出众。',
+        '右弼化科':'右弼为助星化科——辅助他人的能力获得认可，做幕后英雄也能扬名。适合做二把手或核心幕僚，靠忠诚和能力赢得信任。',
+        '天机化忌':'天机化忌——思维易陷入混乱和犹豫不决。决策时容易瞻前顾后、错失良机。建议多做减法、简化选择，神经系统也需注意保养。',
+        '武曲化禄':'武曲为财星化禄——金钱运势极佳，理财能力和执行力带来丰厚回报。适合金融、金属、机械行业。但需防为钱伤情，财聚人散。',
+        '贪狼化权':'贪狼化权——交际手腕和掌控力结合，在社交圈中拥有话语权。适合做团队领袖或社群运营者，魅力与权威并存。',
+        '天梁化科':'天梁为荫星化科——善举和品德获得社会赞誉。适合公益事业和教育工作，德高望重的形象自然形成。',
+        '文曲化忌':'文曲为才艺星化忌——才艺发挥受阻或作品不被理解，易有怀才不遇之感。口舌表达也需注意分寸。建议沉下心打磨技艺，金子总会发光。',
+        '太阳化禄':'太阳为光明之星化禄——名声和人脉直接转化为财富，曝光度越高财运越旺。适合做公众人物或品牌代言人。慷慨大方，财散人聚。',
+        '武曲化权':'武曲化权——执行力和决断力达到顶峰，适合带领团队攻坚克难。金融和工程领域的管理者之位手到擒来。',
+        '天同化忌':'天同为福星化忌——福气暂时退隐，容易感到不满足和空虚。需注意情绪管理和心理健康，勿过度追求享乐而忽略了内心的真正需求。',
+        '巨门化禄':'巨门为暗星化禄——暗中智慧和不为人知的才能带来财富。适合研究、幕后策划、知识产权相关行业。寡言多思者能闷声发财。',
+        '太阳化权':'太阳化权——领导力和公众影响力大增，适合从政或担任企业高管。光明正大的管理风格，以德服人、以理服众。',
+        '文曲化科':'文曲为才艺星化科——才艺和表达能力获得社会认可，适合艺术、演艺、写作。口才和文采是你的金字招牌。',
+        '文昌化忌':'文昌为文星化忌——学业或文书方面容易出错和受阻。考试运欠佳，合同和文件需仔细核对。建议踏踏实实读书做事，不投机取巧。',
+        '天梁化禄':'天梁为荫星化禄——长辈提携和福报转化为实际财富。适合医疗、养老、教育行业。善有善报，助人即是助己。',
+        '紫微化权':'紫微化权——帝王之星的掌控力全面激活。适合担任一把手或自己创业当老板。权威和魄力达到人生峰值，但需宽严并济、恩威兼施。',
+        '左辅化科':'左辅为助星化科——辅助和协调能力获得认可。适合做首席运营官或项目协调人，靠高效执行和组织能力赢得口碑。',
+        '武曲化忌':'武曲为财星化忌——财运受阻，金钱方面易有困扰和损失。投资需格外谨慎，不宜借贷担保。但困境也是历练，熬过低谷后理财能力会更强。',
+        '破军化禄':'破军为先锋星化禄——破旧立新的行动力带来财富。适合创业和开拓新市场，越是别人不敢碰的领域越有机会。胆大心细者能成大事。',
+        '巨门化权':'巨门化权——暗中策谋和战略规划的能力大增。适合做幕后推手或策略顾问，不求表面风光但求实际掌控。',
+        '贪狼化忌':'贪狼化忌——欲望和现实脱节，易有求而不得之苦。感情和物质两方面都需降低期望值。学会知足，贪狼化忌其实是教人"取舍"的智慧。'
+    };
+    // 身宫
+    let hbSH=getHourBranch(hh);
+    let shenGongIdx=(m+1+hbSH)%12; // 身宫：寅起正月→顺数月→顺数时（非逆数）
+    let shenGongName='';
+    for(let i=0;i<12;i++){
+        if(gongs[i].idx===shenGongIdx){shenGongName=ZW_GONG[i];break;}
+    }
+    if(shenGongName){
+        analysis+='<p><strong>【身宫】</strong>身宫落在<strong>'+shenGongName+'</strong>，此宫为后天运势之根基，三十岁后影响渐显，是成年后人格定型和人生重心的关键。</p>';
+        // 身宫具体建议
+        let shenAdvice='';
+        if(shenGongName==='命宫')shenAdvice='身命同宫——表里如一，自我认知清晰，三十岁后性情与天赋趋于稳定。建议：深耕自己的核心优势，不随波逐流。你的人生主线明确，适合走"专精"路线而非"博而不精"。保持初心，方得始终。';
+        else if(shenGongName==='财帛')shenAdvice='身宫落财帛——成年后以财富积累为人生重心，经济独立和财务自由是你安全感的核心来源。建议：三十岁前多学理财技能，三十岁后财富自然汇聚。但勿让金钱定义你全部的价值，财富是工具而非目的。';
+        else if(shenGongName==='夫妻')shenAdvice='身宫落夫妻——婚姻和伴侣关系在你的后半生占据极其重要的位置。三十岁后择偶标准趋于成熟，建议不急于早婚。身宫在此，配偶对你的运势影响极大——选对人如虎添翼，选错则身心俱疲。';
+        else if(shenGongName==='子女')shenAdvice='身宫落子女——子女和下一代是你后半生的重心，也是幸福感和成就感的重大来源。三十岁后对家庭和亲子关系的投入会显著增加。建议：在生育前后做好人生规划，子女运旺但勿过度牺牲自我。';
+        else if(shenGongName==='官禄')shenAdvice='身宫落官禄——事业成就是你后半生最核心的追求，职场和社会地位对你的自我认同至关重要。建议：三十岁是职业黄金期的起点，勇敢抓住机遇，不怕换跑道。身宫在官禄者，中年是巅峰期的开始。';
+        else if(shenGongName==='疾厄')shenAdvice='身宫落疾厄——健康是你后半生最需要关注的课题。建议：三十岁起建立规律的运动和体检习惯，将健康管理纳入日常。身心一体，心理健康同样重要。身宫在此并非坏事——它让你更早觉醒对身体的觉察。';
+        else if(shenGongName==='迁移')shenAdvice='身宫落迁移——三十岁后运势与"走出去"密切相关。无论是异地发展、出国深造还是跨界发展，动则生机。建议：不要安于现状，外面的世界有更大的舞台。身宫在迁移者，人生后半程往往比前半程精彩数倍。';
+        else if(shenGongName==='交友')shenAdvice='身宫落交友——后半生的人脉圈层决定你的高度。建议：三十岁后注重社交质量和合作关系的筛选，宁缺毋滥。好的合作伙伴和下属是你成功的关键助力，但要防"成也萧何败也萧何"。';
+        else if(shenGongName==='田宅')shenAdvice='身宫落田宅——家庭和房产是你后半生的稳定根基。建议：尽早规划置业或改善居住环境，稳定的居所能带给你最大的内心安宁。身宫在此也意味着晚年乐于居家，享受天伦之乐。';
+        else if(shenGongName==='福德')shenAdvice='身宫落福德——后半生的幸福在于精神世界的富足。三十岁后人生重心从外在成就转向内心平静。建议：培养一个能滋养灵魂的爱好，学会与自己和解。你晚年的福气来自内心的从容，而非外在的繁华。';
+        else if(shenGongName==='父母')shenAdvice='身宫落父母——长辈和原生家庭对你的后半生影响深远。建议：与父母或长辈关系是你人生的重要支撑，主动修复和经营这些关系。身宫在此也意味着你从长辈处获得的智慧和资源不可忽视。';
+        else shenAdvice='身宫在此，三十岁后需结合宫位主星和四化来具体判断后天运势走向。';
+        analysis+='<p style="margin:6px 0;font-size:11px;line-height:1.8;color:#bbb;"><strong>💡 身宫建议：</strong>'+shenAdvice+'</p>';
+    }
+
+    // 保持原SIHUA映射用于查找
     const SIHUA={
         0:{lu:'廉贞化禄',quan:'破军化权',ke:'武曲化科',ji:'太阳化忌'},
         1:{lu:'天机化禄',quan:'天梁化权',ke:'紫微化科',ji:'太阴化忌'},
@@ -1302,24 +1619,69 @@ function calcZiwei(){
         8:{lu:'天梁化禄',quan:'紫微化权',ke:'左辅化科',ji:'武曲化忌'},
         9:{lu:'破军化禄',quan:'巨门化权',ke:'太阴化科',ji:'贪狼化忌'}
     };
-    // 身宫
-    let shenGongIdx=(m+1-hh+12)%12; // 从寅起正月顺数到出生月，再逆数到出生时
-    let shenGongName='';
-    for(let i=0;i<12;i++){
-        if(gongs[i].idx===shenGongIdx){shenGongName=ZW_GONG[i];break;}
-    }
-    if(shenGongName)analysis+='<p><strong>【身宫】</strong>身宫落在<strong>'+shenGongName+'</strong>，此宫为后天运势之根基，三十岁后影响渐显。身命同宫则表里如一；身宫落财帛则一生以财为重；落官禄则以事业为人生主轴。</p>';
-
-    let si=SIHUA[dayGZ_.s];
+    let si=SIHUA[yGZ.s]; // 四化以年干为准
     if(si){
-        analysis+='<p><strong>【四化飞星】</strong>生年天干为<strong>'+S[dayGZ_.s]+'</strong>：</p>';
+        analysis+='<p><strong>【四化飞星】</strong>生年天干为<strong>'+S[yGZ.s]+'</strong>，四化星曜如下：</p>';
         analysis+='<div style="margin:6px 0;font-size:11px;line-height:1.8;">';
-        analysis+='<span style="color:#8bc34a;">🟢 化禄：'+si.lu+'</span> — 财禄之根，一生财运所在<br>';
-        analysis+='<span style="color:#ff9800;">🔵 化权：'+si.quan+'</span> — 权力之根，掌权或主控的方向<br>';
-        analysis+='<span style="color:#4fc3f7;">🟣 化科：'+si.ke+'</span> — 名声之根，扬名立万的领域<br>';
-        analysis+='<span style="color:#ef5350;">🔴 化忌：'+si.ji+'</span> — 缺陷之根，一生的课题与考验<br>';
+        let luDetail=SIHUA_DETAIL[si.lu]||'';
+        let quanDetail=SIHUA_DETAIL[si.quan]||'';
+        let keDetail=SIHUA_DETAIL[si.ke]||'';
+        let jiDetail=SIHUA_DETAIL[si.ji]||'';
+        analysis+='<p><span style="color:#8bc34a;">🟢 <strong>化禄：'+si.lu+'</strong></span><br>'+luDetail+'</p>';
+        analysis+='<p><span style="color:#ff9800;">🔵 <strong>化权：'+si.quan+'</strong></span><br>'+quanDetail+'</p>';
+        analysis+='<p><span style="color:#4fc3f7;">🟣 <strong>化科：'+si.ke+'</strong></span><br>'+keDetail+'</p>';
+        analysis+='<p><span style="color:#ef5350;">🔴 <strong>化忌：'+si.ji+'</strong></span><br>'+jiDetail+'</p>';
         analysis+='</div>';
     }
+
+    // ── 特殊格局自动识别 ──
+    let geJu=[];
+    let hasStar=(n,g)=>g.stars.some(s=>s.startsWith(n));
+    let hasAnyStar=(ns,g)=>ns.some(n=>g.stars.some(s=>s.startsWith(n)));
+    let starInGong=(n,gi)=>gongs[gi]&&gongs[gi].stars.some(s=>s.startsWith(n));
+    // 紫微相关格局
+    if(hasStar('紫微',gongs[0])&&hasStar('天府',gongs[0]))geJu.push({n:'紫府同宫格',d:'紫微天府同守命宫——帝王与财库合一。既有领导力又有理财能力，天生贵气藏身。但双星同宫也意味着责任重大——你必须对得起这份天赋。',a:'💡 行动指南：选择能同时发挥管理才能和财务头脑的赛道（如企业高管、投资管理）。切忌"小事亲为"——你的天赋在战略层而非执行层，学会授权是成败关键。'});
+    if(hasStar('紫微',gongs[0])&&mingPos===6)geJu.push({n:'紫微朝垣格',d:'紫微坐午宫——午为"日丽中天"之位，如帝王坐明堂。自带威严和号召力，走到哪里都是焦点。',a:'💡 行动指南：你适合需要"威望"的岗位（高管、创始人、公众人物）。成功的关键不是更努力而是更有格局——站得高自然看得远。谦逊是帝星最好的伙伴。'});
+    // 太阳太阴
+    if(hasStar('太阳',gongs[0])&&mingPos===3)geJu.push({n:'日照雷门格',d:'太阳在卯宫——卯为日出之门，如旭日东升。光明磊落、热情主动，早年即有不错表现。',a:'💡 行动指南：你的魅力就是武器——适合教育、公益、外交等需要感染力的行业。但光芒太强时也记得给别人留阴影。'});
+    if(hasStar('太阴',gongs[0])&&mingPos===11)geJu.push({n:'月朗天门格',d:'太阴在亥宫——亥为天门，太阴如皓月当空。温柔细腻但内心清醒，审美一流、直觉精准。',a:'💡 行动指南：你的天赋在"感受"而非"表达"——艺术、设计、心理、文化行业是你的主场。相信直觉，它比理性分析更准。'});
+    // 贪狼
+    if(hasStar('贪狼',gongs[0])&&mingPos===2)geJu.push({n:'雄宿乾元格',d:'贪狼在寅宫——欲望被正向引导为进取心和创造力。多才多艺且执行力强。',a:'💡 行动指南：选择能释放你表现欲的赛道（演艺、销售、创业）。关键是"聚焦"——贪狼最怕什么都想要。选一件事做到极致，人生自然开花。'});
+    // 机月同梁
+    if(hasAnyStar(['天机','太阴','天同','天梁'],gongs[0])&&(hasStar('天机',gongs[0])?1:0)+(hasStar('太阴',gongs[0])?1:0)+(hasStar('天同',gongs[0])?1:0)+(hasStar('天梁',gongs[0])?1:0)>=2)geJu.push({n:'机月同梁格',d:'天机太阴天同天梁汇聚——典型的"幕后军师"。擅长策划、分析、协调。',a:'💡 行动指南：你的优势在幕后——咨询、策划、研究、幕僚是最佳赛道。不要在"冲锋陷阵"上和别人比，你的价值在于"让别人冲得更准"。'});
+    // 杀破狼
+    let spStars=['七杀','破军','贪狼'];
+    if(hasAnyStar(spStars,gongs[0])&&(hasStar('七杀',gongs[0])?1:0)+(hasStar('破军',gongs[0])?1:0)+(hasStar('贪狼',gongs[0])?1:0)>=1)geJu.push({n:'杀破狼格',d:'七杀、破军、贪狼入命——你的人生注定不平凡，要么大起大落要么一飞冲天。',a:'💡 行动指南：高风险高回报赛道（创业、军警、竞技）。但最关键的能力不是"冲"而是"停"——学会在关键时刻踩刹车，冲动是你最大的敌人也是最大的资产。'});
+    // 府相朝垣
+    if(hasStar('天府',gongs[0])&&hasStar('天相',gongs[0]))geJu.push({n:'府相朝垣格',d:'天府天相同守命宫——稳重与和谐兼备，是任何组织都欢迎的"靠谱担当"。',a:'💡 行动指南：体制内或大企业是你的最佳舞台。不需要冒险创业，在稳定架构中发挥管理才能，你的价值会随时间增长而非衰减。'});
+    // 文星拱命
+    if((hasStar('文昌',gongs[0])||hasStar('文曲',gongs[0]))&&(hasStar('文昌',gongs[0])?1:0)+(hasStar('文曲',gongs[0])?1:0)==2)geJu.push({n:'文桂文华格',d:'文昌文曲双星汇聚——天生的学者或艺术家。',a:'💡 行动指南：学术、写作、教育是你的一亩三分地。知识是最强武器——持续输入、系统输出，你输出的每篇文字都在为未来铺路。'});
+    // 禄马交驰
+    if(hasStar('禄存',gongs[0])&&hasStar('天马',gongs[0]))geJu.push({n:'禄马交驰格',d:'禄存天马同守命宫——财富与奔波同步，越动越有钱。',a:'💡 行动指南：贸易、物流、销售等流动性强的行业最适合你。但要学会理财——赚得快也花得快，每月强制储蓄是对自己最好的保护。'});
+    // 日月并明
+    if((hasStar('太阳',gongs[0])&&hasStar('太阴',gongs[0])))geJu.push({n:'日月并明格',d:'太阳太阴同守命宫——阴阳调和，刚柔并济。',a:'💡 行动指南：你天生是协调者——适合需要平衡多方利益的岗位（项目经理、外交、公关）。白天冲晚上思，记住：两种模式你都需要，不要只活在一种状态里。'});
+    if(geJu.length>0){
+        analysis+='<p><strong>【🏆 特殊格局】</strong></p><div style="margin:6px 0;">';
+        geJu.forEach(g=>{analysis+='<div style="margin:6px 0;padding:10px 12px;background:linear-gradient(135deg,rgba(212,132,122,0.08),rgba(232,163,154,0.04));border-radius:8px;border-left:3px solid var(--accent);"><div style="font-weight:700;color:var(--accent);margin-bottom:4px;">'+g.n+'</div><div style="font-size:11px;line-height:1.8;">'+g.d+'</div>'+(g.a?'<div style="font-size:10px;color:#b8a49e;margin-top:4px;">'+g.a+'</div>':'')+'</div>';});
+        analysis+='</div>';
+    }
+
+    // ── 每宫吉煞分布 ──
+    analysis+='<p><strong>【📊 十二宫吉煞评等】</strong></p><div style="margin:6px 0;font-size:11px;line-height:1.8;">';
+    gongs.forEach((g,i)=>{
+        let jiCount=g.stars.filter(s=>s.includes(':吉')||s.includes('(帝)')).length;
+        let shaCount=g.stars.filter(s=>s.includes(':煞')||s.includes('⚠')).length;
+        let level=jiCount>shaCount+2?'⭐上吉':jiCount>shaCount?'👍中平':shaCount>jiCount+2?'⚡多舛':'➖一般';
+        let mainStar=g.stars.filter(s=>!s.includes(':')).join('、')||'无主星';
+        analysis+='<p>'+g.name+'：'+mainStar+' — '+level+'（吉'+jiCount+'/煞'+shaCount+'）</p>';
+    });
+    let maxJiGong=gongs.reduce((a,b)=>(b.stars.filter(s=>s.includes(':吉')||s.includes('(帝)')).length>a.stars.filter(s=>s.includes(':吉')||s.includes('(帝)')).length?b:a),gongs[0]);
+    let maxShaGong=gongs.reduce((a,b)=>(b.stars.filter(s=>s.includes(':煞')).length>a.stars.filter(s=>s.includes(':煞')).length?a:b),gongs[0]);
+    let jiCount=maxJiGong.stars.filter(s=>s.includes(':吉')||s.includes('(帝)')).length;
+    let shaCount=maxShaGong.stars.filter(s=>s.includes(':煞')).length;
+    if(jiCount>1)analysis+='<p><strong>🌟 最强吉宫：'+maxJiGong.name+'</strong>——吉星汇聚，此领域是你的先天优势所在，事半功倍。建议将人生重心向此方向倾斜。</p>';
+    if(shaCount>1)analysis+='<p><strong>⚡ 需注意宫位：'+maxShaGong.name+'</strong>——煞星偏重，此领域需后天多花心思经营。煞星不全是坏事，重在"化解"而非"逃避"。</p>';
+    analysis+='</div>';
 
     analysis+='<p style="margin-top:10px;">命盘吉凶需结合三方四正、四化、辅星煞星综合判断。命宫为根，身宫为果，大限流转方见人生起伏。以上皆为命理参考，后天努力与选择才是改变命运的关键。</p>';
 
@@ -1359,4 +1721,231 @@ function initZiweiSelects(){
     let ms=document.getElementById('zwMonth');for(let i=1;i<=12;i++)ms.innerHTML+='<option value="'+i+'"'+(i===1?' selected':'')+'>'+i+'月</option>';
     let ds=document.getElementById('zwDay');for(let i=1;i<=31;i++)ds.innerHTML+='<option value="'+i+'"'+(i===1?' selected':'')+'>'+i+'日</option>';
     let zs=document.getElementById('zwMin');for(let i=0;i<60;i++)zs.innerHTML+='<option value="'+i+'"'+(i===0?' selected':'')+'>'+String(i).padStart(2,'0')+'分</option>';
+}
+
+// ==================== 十神格局解析 ====================
+function analyzeShiShenGeJu(dGZ,ps){
+    let ssCount={};ps.forEach(p=>{let s=getShiShen(dGZ.s,p.s);ssCount[s]=(ssCount[s]||0)+1;});
+    let names=['正官','七杀','正财','偏财','食神','伤官','正印','偏印','比肩','劫财'];
+    let total=0;names.forEach(n=>total+=ssCount[n]||0);
+    if(total===0)return '<p>无十神数据。</p>';
+
+    // 分布表
+    let html='<p style="color:var(--accent);font-weight:700;margin-bottom:8px;">📋 十神分布统计（四柱天干）</p>';
+    html+='<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px;">';
+    names.forEach(n=>{
+        let c=ssCount[n]||0;
+        let barW=c>0?Math.max(10,c*22):4;
+        html+='<div style="flex:1;min-width:80px;text-align:center;padding:6px 4px;background:#faf5f0;border-radius:8px;">';
+        html+='<div style="font-size:10px;color:#888;">'+n+'</div>';
+        html+='<div style="font-size:18px;font-weight:700;color:'+(c>0?'var(--accent)':'#ccc')+';">'+c+'</div>';
+        html+='<div style="height:4px;background:#eee;border-radius:2px;margin-top:2px;"><div style="height:100%;width:'+barW+'px;background:var(--accent2);border-radius:2px;"></div></div>';
+        html+='</div>';
+    });
+    html+='</div>';
+
+    // 格局判断
+    let hasGuan=(ssCount['正官']||0)+(ssCount['七杀']||0);
+    let hasCai=(ssCount['正财']||0)+(ssCount['偏财']||0);
+    let hasShiShang=(ssCount['食神']||0)+(ssCount['伤官']||0);
+    let hasYin=(ssCount['正印']||0)+(ssCount['偏印']||0);
+    let hasBiJie=(ssCount['比肩']||0)+(ssCount['劫财']||0);
+    let hasShi=(ssCount['食神']||0)>0;
+    let hasSha=(ssCount['七杀']||0)>0;
+    let hasShang=(ssCount['伤官']||0)>0;
+    let hasZhengGuan=(ssCount['正官']||0)>0;
+    let hasZhengYin=(ssCount['正印']||0)>0;
+
+    html+='<p style="color:var(--accent);font-weight:700;margin-bottom:6px;">🏷 格局判别</p>';
+    let patterns=[];
+
+    if(hasShiShang>=2&&hasCai>=2)
+        patterns.push({name:'食伤生财格',desc:'食神伤官生财星——你的才华能直接转化为财富。这是命理中最经典的"靠本事吃饭"格局。你天生有将创意、技能、表达变现的能力，适合自由职业、艺术创作、技术研发等能将个人才华放大的赛道。'});
+    else if(hasShiShang>=1&&hasCai>=1)
+        patterns.push({name:'食伤生财（弱）',desc:'食伤和财星同现——有将才华变现的潜力，但力量尚需加强。建议深耕一项核心技能，专注打磨到行业前20%，财路自然通畅。'});
+
+    if(hasGuan>=2&&hasYin>=2)
+        patterns.push({name:'官印相生格',desc:'正官/七杀与正印/偏印双双有力——这是命理中的上等格局。官星给你规矩和事业心，印星给你学识和贵人。做事有理有据、有后台有资源，适合体制内、大平台管理、学术研究等需要"底蕴+规则"的领域。'});
+    else if(hasGuan>=1&&hasYin>=1)
+        patterns.push({name:'官印相生（弱）',desc:'官星与印星同现——有规矩也有学识，但火候尚浅。适合在稳定环境中逐步积累资历和话语权。'});
+
+    if(hasCai>=2&&hasGuan>=2)
+        patterns.push({name:'财官双美格',desc:'财星和官星双双旺盛——既有赚钱的能力又有管理的天赋，是"能赚钱也能管钱"的实干家。事业财运双轨并行，适合企业高管、自主创业等需要同时驾驭资源和人的位置。'});
+    else if(hasCai>=1&&hasGuan>=1)
+        patterns.push({name:'财官双美（弱）',desc:'财星与官星同现——财运和事业运皆有基础。建议选择一个能将两者结合的职业方向，稳步积累。'});
+
+    if(hasShi&&hasSha)
+        patterns.push({name:'食神制杀格',desc:'食神制七杀——以柔克刚的经典组合。七杀的攻击性和食神的智慧形成完美制衡。你天生有化解危机、处理复杂局面的能力，在职场上属于"救火队长"型人才——越乱的局面你越能展现价值。'});
+
+    if(hasShang&&hasYin)
+        patterns.push({name:'伤官配印格',desc:'伤官的才华锋芒配上印星的学识内涵——这是"天才+修养"的罕见组合。你的才华不是野路子的蛮力，而是有底蕴、有章法的精准输出。适合学术研究、高端创意、战略咨询等需要"深度思考+精准表达"的领域。'});
+
+    if(hasBiJie>=2&&hasCai>=1)
+        patterns.push({name:'比劫夺财格',desc:'比肩/劫财与财星相遇——朋友和社交是你的财富来源也是耗财通道。你的人脉就是钱脉，但合伙、借贷、担保需格外谨慎。建议：赚钱靠人脉，管钱靠自己，留足"防火墙"。'});
+
+    if(hasZhengGuan&&hasZhengYin&&hasCai>=1)
+        patterns.push({name:'官印财全格',desc:'正官+正印+财星三全——命中三大吉神齐聚，是难得的富贵双全之局。事业（官）、学识（印）、财富（财）三驾马车并驱，一生只需顺应运势节奏即可。'});
+
+    if(patterns.length===0){
+        // 单十神主导判断
+        let maxSs='',maxN=0;
+        names.forEach(n=>{let c=ssCount[n]||0;if(c>maxN){maxN=c;maxSs=n;}});
+        if(maxN>=3)patterns.push({name:maxSs+'主导格',desc:'命局以<strong>'+maxSs+'</strong>为主导力量（出现'+maxN+'次）。四柱十神较为单一，格局纯粹。建议围绕'+maxSs+'的特质来规划人生方向，发挥单一十神的极致优势。'});
+        else if(maxN>=1)patterns.push({name:'十神均衡格',desc:'十神分布较为均衡，没有哪一种力量压倒一切。这种人适应性最强，什么环境都能活，什么角色都能演。缺点是没有特别突出的天赋赛道——需要后天主动选择和深耕。'});
+        else patterns.push({name:'格局待明',desc:'命局十神力量尚不显，需结合大运流年来观察格局走向。格局成于大运者，后发制人。'});
+    }
+
+    patterns.forEach(p=>{
+        html+='<div style="margin:8px 0;padding:8px 12px;background:#fdf8f5;border-radius:8px;border-left:3px solid var(--accent);">';
+        html+='<div style="font-weight:700;color:var(--accent);margin-bottom:4px;">'+p.name+'</div>';
+        html+='<div style="font-size:11px;line-height:1.7;color:var(--text);">'+p.desc+'</div>';
+        html+='</div>';
+    });
+
+    // 补充：官杀混杂提示
+    if((ssCount['正官']||0)>=1&&(ssCount['七杀']||0)>=1){
+        html+='<p style="font-size:10px;color:#b8a49e;margin-top:6px;">⚠ 命带官杀混杂：正官与七杀并存，事业和感情上易在"稳定"与"突破"间摇摆。建议选定一条主赛道后不再回头。</p>';
+    }
+
+    html+='<p style="font-size:10px;color:#b8a49e;margin-top:4px;">格局为四柱天干十神的组合判断。完整格局需结合地支藏干、大运流年综合考量，以上为天干层面的初步解析。</p>';
+    return html;
+}
+
+// ==================== 五行流通分析 ====================
+function analyzeWuxingFlow(wc,gys){
+    let wx=['木','火','土','金','水'];
+    let sheng={木:'火',火:'土',土:'金',金:'水',水:'木'}; // 相生
+    let ke={木:'土',火:'金',土:'水',金:'木',水:'火'};    // 相克
+    let beiKe={木:'金',火:'水',土:'木',金:'火',水:'土'}; // 被克
+
+    let html='';
+
+    // 1. 五行生克链条
+    html+='<p style="color:var(--accent);font-weight:700;margin-bottom:6px;">🔄 五行生克关系链</p>';
+    let chains=[];
+    wx.forEach(w=>{
+        let child=sheng[w];
+        let c1=wc[w]||0,c2=wc[child]||0;
+        if(c1>0&&c2>0)
+            chains.push('<span style="color:var(--'+w+');">'+w+'</span> → <span style="color:var(--'+child+');">'+child+'</span>（'+w+'生'+child+'，流通顺畅 ✓）');
+        else if(c1>0&&c2===0)
+            chains.push('<span style="color:var(--'+w+');">'+w+'</span> → ❌ <span style="color:#ccc;">'+child+'（缺）</span>（'+w+'生'+child+'受阻 ⚡）');
+    });
+    html+='<p style="font-size:11px;line-height:1.8;">'+chains.join('<br>')+'</p>';
+
+    // 2. 克的关系
+    html+='<p style="color:var(--accent);font-weight:700;margin:10px 0 6px;">⚔ 制约关系</p>';
+    let keChains=[];
+    wx.forEach(w=>{
+        let target=ke[w];
+        let c1=wc[w]||0,c2=wc[target]||0;
+        if(c1>0&&c2>0){
+            if(c1>c2*2)
+                keChains.push('<span style="color:var(--'+w+');">'+w+'</span> <strong>过克</strong> <span style="color:var(--'+target+');">'+target+'</span>（'+w+'('+c1+') ≫ '+target+'('+c2+')，'+target+'受损 ⚠）');
+            else
+                keChains.push('<span style="color:var(--'+w+');">'+w+'</span> 克 <span style="color:var(--'+target+');">'+target+'</span>（正常制约）');
+        }
+    });
+    html+='<p style="font-size:11px;line-height:1.8;">'+(keChains.length>0?keChains.join('<br>'):'五行制约关系较为均衡。')+'</p>';
+
+    // 3. 流通顺畅度判断
+    html+='<p style="color:var(--accent);font-weight:700;margin:10px 0 6px;">🌡 流通诊断</p>';
+    let missing=wx.filter(w=>(wc[w]||0)===0);
+    let weak=wx.filter(w=>(wc[w]||0)>0&&(wc[w]||0)<=1);
+    let strong=wx.filter(w=>(wc[w]||0)>=4);
+    let ysSet=new Set(gys.ys||[]);
+    let jsSet=new Set(gys.js||[]);
+
+    let diag=[];
+    if(missing.length===0)diag.push('✅ 五行齐全——你的八字五行完整，天生具备较好的适应能力和抗风险能力。五行俱全之人一生起伏相对平缓，是很多人羡慕的"命好"配置。');
+    else if(missing.length===1)diag.push('⚡ 五行缺<strong>'+missing[0]+'</strong>——'+missing[0]+'所代表的器官、方位、六亲在你的命局中偏弱。可在生活中通过颜色（'+(missing[0]==='木'?'绿色':missing[0]==='火'?'红色':missing[0]==='土'?'黄色':missing[0]==='金'?'白色':'黑色')+'）、饰品、方位来补充。');
+    else diag.push('⚠ 五行缺<strong>'+missing.join('、')+'</strong>——缺失较多，命局偏向明显。这让你在某个领域天赋突出，但也意味着需要在其他方面有意识补足。缺什么补什么：颜色、方位、职业选择均可调节。');
+
+    if(weak.length>0)diag.push('💧 偏弱五行：<strong>'+weak.join('、')+'</strong>——这些五行力量不足，对应的脏腑、季节、人际关系需要多加关注。');
+    if(strong.length>0)diag.push('🔥 偏旺五行：<strong>'+strong.join('、')+'</strong>——过犹不及，旺的五行需要适当疏导而非继续补充。');
+
+    // 流通顺畅度
+    let flowScore=0;
+    wx.forEach(w=>{let c=wc[w]||0;if(c>0)flowScore++;});
+    if(missing.length===0)flowScore+=2;
+    if(strong.length<=1)flowScore+=1;
+    let flowLevel=flowScore>=7?'非常顺畅':flowScore>=5?'基本顺畅':flowScore>=3?'部分阻滞':'严重阻塞';
+    diag.push('📊 五行流通度：<strong>'+flowLevel+'</strong>（'+(flowScore>=7?'五行齐全且均衡，气场流通无碍。':flowScore>=5?'大部分五行能正常流转，个别环节需外力助推。':flowScore>=3?'存在明显阻滞，需有意识调节。':'五行严重失衡，建议从用神入手逐步调和。')+'）');
+
+    html+='<p style="font-size:11px;line-height:1.8;">'+diag.join('<br>')+'</p>';
+
+    // 4. 平衡建议
+    html+='<p style="color:var(--accent);font-weight:700;margin:10px 0 6px;">💡 五行平衡建议</p>';
+    let advice=[];
+    if(missing.length>0){
+        let m=missing[0];
+        let bu={木:'多穿戴绿色衣物/木质饰品，家中养绿色植物。早餐多吃蔬菜水果。',火:'多穿戴红色/粉色，佩戴水晶手链。多做有氧运动提升阳气。',土:'多穿戴黄色/米色，佩戴黄水晶或玉器。稳定作息，脚踏实地。',金:'多穿戴白色/银色，佩戴金属饰品。练习深呼吸，增强肺气。',水:'多穿戴黑色/蓝色，佩戴黑曜石。多喝水，靠近水边散步。'};
+        advice.push('补<strong>'+missing.join('、')+'</strong>：'+(bu[m]||'五行缺失需综合调理。'));
+    }
+    if(strong.length>0){
+        let s=strong[0];
+        let xie={木:'用火（红色）来泄木气——木生火，多余的木能量转化为火的热情和行动力。',火:'用土（黄色）来泄火气——火生土，将过剩热情转化为稳定的产出和积累。',土:'用金（白色）来泄土气——土生金，将厚重转化为果断和执行力。',金:'用水（黑色）来泄金气——金生水，将刚硬转化为智慧和灵活。',水:'用木（绿色）来泄水气——水生木，将泛滥的思绪转化为具体的行动和创造。'};
+        advice.push('泄<strong>'+s+'</strong>：'+(xie[s]||'过旺五行需疏导。'));
+    }
+    let ysWx=gys.xs[0]||'';
+    if(ysWx&&!missing.includes(ysWx)&&!strong.includes(ysWx)){
+        advice.push('用神<strong>'+ysWx+'</strong>是你的调和剂——日常生活中多接触'+ysWx+'属性的人事物，能帮助五行流转更加顺畅。');
+    }
+    if(advice.length>0)html+='<p style="font-size:11px;line-height:1.8;">'+advice.join('<br>')+'</p>';
+
+    html+='<p style="font-size:10px;color:#b8a49e;margin-top:4px;">五行流通分析基于四柱天干地支的五行分布。完整的流通分析需结合大运流年的五行引入，以上为命局静态分析。</p>';
+    return html;
+}
+
+// ==================== 流年逐月运势 ====================
+function analyzeLiunianMonths(cy,yearStem,yearBranch,dGZ,gys,gst){
+    let ySet=new Set(gys.ys||[]),jSet=new Set(gys.js||[]);
+    let monthNames=['正月（寅）','二月（卯）','三月（辰）','四月（巳）','五月（午）','六月（未）','七月（申）','八月（酉）','九月（戌）','十月（亥）','冬月（子）','腊月（丑）'];
+    let monthBranches=[2,3,4,5,6,7,8,9,10,11,0,1]; // 寅=2 ... 丑=1
+    let monthSeq=['寅','卯','辰','巳','午','未','申','酉','戌','亥','子','丑'];
+
+    let html='<thead><tr><th>月份</th><th>干支</th><th>纳音</th><th>五行</th><th>吉凶</th><th>建议</th></tr></thead><tbody>';
+
+    let monthAdvices={
+        木:{good:'木旺之月，利于学习进修、拓展人脉。适合开启新项目。',bad:'木气过重，注意肝胆健康。避免冲动做决策。',neutral:'木气平和，按部就班即可。适合读书充电。'},
+        火:{good:'火旺之月，热情高涨利于社交、公开演讲、竞聘。',bad:'火气太盛易急躁冲突，注意口舌是非和心血管。',neutral:'火气适中，保持温和节奏。适合适度运动。'},
+        土:{good:'土旺之月，利于置业、签约、长期投资。稳扎稳打收获多。',bad:'土重沉闷，容易钻牛角尖。注意脾胃消化。',neutral:'土气平稳，适合整理规划。宜储蓄不宜投机。'},
+        金:{good:'金旺之月，果断决策，利于谈判、诉讼、竞争性事务。',bad:'金气过刚易伤人伤己，注意呼吸道和筋骨。',neutral:'金气内敛，适合精打细算。坚守原则但勿固执。'},
+        水:{good:'水旺之月，智慧灵动，利于创作、沟通、流动性工作。',bad:'水泛易情绪化，注意肾脏泌尿系统。避免过度思虑。',neutral:'水气柔和，适合反思和调整。多与朋友交流。'}
+    };
+
+    for(let i=0;i<12;i++){
+        let mb=monthBranches[i];
+        let ms=getMonthStem(yearStem,mb);
+        let gz=S[ms]+B[mb];
+        let nayin=getNayin(ms,mb);
+        let me=SE[ms]; // month stem element
+        let be=BE[mb]; // month branch element
+
+        // 吉凶判断：月干五行在喜用神/忌神中
+        let jiXiong='';
+        let jxClass='';
+        if(ySet.has(me)){jiXiong='🟢 吉';jxClass='color:#4caf50;';}
+        else if(jSet.has(me)){jiXiong='🔴 凶';jxClass='color:#ef5350;';}
+        else if(ySet.has(be)){jiXiong='🟡 平偏吉';jxClass='color:#ff9800;';}
+        else if(jSet.has(be)){jiXiong='🟠 平偏凶';jxClass='color:#ff9800;';}
+        else {jiXiong='⚪ 平';jxClass='color:#888;';}
+
+        // 建议
+        let adv='';
+        if(ySet.has(me))adv=monthAdvices[me].good;
+        else if(jSet.has(me))adv=monthAdvices[me].bad;
+        else adv=monthAdvices[me]?monthAdvices[me].neutral:'平稳度过，宜静不宜动。';
+
+        html+='<tr>';
+        html+='<td style="font-weight:600;">'+monthNames[i]+'</td>';
+        html+='<td><span class="wx-'+me+'">'+gz+'</span></td>';
+        html+='<td style="font-size:10px;color:#888;">'+nayin+'</td>';
+        html+='<td><span class="etag '+me+'">'+me+'</span></td>';
+        html+='<td style="'+jxClass+'font-weight:700;">'+jiXiong+'</td>';
+        html+='<td style="font-size:11px;line-height:1.5;">'+adv+'</td>';
+        html+='</tr>';
+    }
+    html+='</tbody>';
+    return html;
 }
