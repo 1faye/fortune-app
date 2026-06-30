@@ -20,13 +20,17 @@ function showLoading(id){
     if(el)el.innerHTML='<div style="text-align:center;padding:20px;color:#b8a49e;"><span style="display:inline-block;animation:spin .8s linear infinite;font-size:24px;">⟳</span><p style="margin-top:8px;font-size:13px;">正在排盘计算，请稍候...</p></div><style>@keyframes spin{0%{transform:rotate(0deg)}100%{transform:rotate(360deg)}}</style>';
 }
 function calc(){
-    showLoading('res');
-    setTimeout(function(){
-    let y=parseInt(document.getElementById('byear').value);
+    // 输入校验
+    let byEl=document.getElementById('byear');
+    if(!byEl||!byEl.value){alert('请选择出生年份');return;}
+    let y=parseInt(byEl.value);
     let m=parseInt(document.getElementById('bmonth').value);
     let d=parseInt(document.getElementById('bday').value);
     let hh=parseInt(document.getElementById('bhour').value);
     let mm=parseInt(document.getElementById('bmin').value);
+    if(y<1900||y>2100||m<1||m>12||d<1||d>31||hh<0||hh>23){alert('请填写有效的出生日期');return;}
+    showLoading('res');
+    setTimeout(function(){
     let lon=parseFloat(document.getElementById('lonVal').value)||116.4;
     ggen=document.querySelector('#gt button.active').dataset.g;
     let ts=trueSolarTime(hh,mm,lon,y,m,d);let h=ts.h,min=ts.m;
@@ -793,6 +797,9 @@ function updateDays(){
 
 document.addEventListener('DOMContentLoaded',()=>{
     initSelects();
+    // 回到顶部按钮
+    let bt=document.getElementById('backTop');
+    if(bt){bt.addEventListener('click',()=>window.scrollTo({top:0,behavior:'smooth'}));window.addEventListener('scroll',()=>{bt.style.display=window.scrollY>400?'flex':'none';});}
     document.querySelectorAll('#gt button').forEach(b=>{b.addEventListener('click',()=>{document.querySelectorAll('#gt button').forEach(x=>x.classList.remove('active'));b.classList.add('active');});});
     document.getElementById('qgDate').value=new Date().toISOString().split('T')[0];
     // 不自动排盘——等用户选好生日再算。默认年份设为1995避免算出"婴儿命"

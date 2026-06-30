@@ -223,7 +223,7 @@ function meihuaGua(){
         up=(y+m+d)%8||8;lo=(y+m+d+now.getHours())%8||8;dong=(y+m+d)%6||6;
     }else{
         let nums=document.getElementById('mhNums').value.trim().split(/\s+/).map(Number);
-        if(nums.length<3||nums.some(isNaN)){alert('请输入三个数字，用空格分隔');return;}
+        if(nums.length<3||nums.some(isNaN)){let el=document.getElementById('mhResult');el.style.display='block';el.innerHTML='<div style="padding:16px;text-align:center;color:var(--red);background:#fdf8f5;border-radius:10px;font-size:13px;">⚠️ 请输入三个有效数字，用空格分隔（如：3 8 15）</div>';return;}
         up=((nums[0]||1)%8)||8;lo=((nums[1]||1)%8)||8;dong=((nums[2]||1)%6)||6;
     }
     let uIdx=(up-1)%8, lIdx=(lo-1)%8;
