@@ -13,6 +13,7 @@ body{font-family:"PingFang SC","Microsoft YaHei","Hiragino Sans GB",sans-serif;b
 .header{text-align:center;padding:20px 0 12px}
 .header .bagua{font-size:36px;margin-bottom:2px;animation:float 3s ease-in-out infinite;display:inline-block;filter:drop-shadow(0 0 8px rgba(212,132,122,0.15))}
 @keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-4px)}}
+@keyframes spin{0%{transform:rotate(0deg)}100%{transform:rotate(360deg)}}
 .header h1{font-size:20px;color:var(--accent);letter-spacing:2px;font-weight:600}
 .header .subtitle{font-size:11px;color:#b8a49e;margin-top:2px;letter-spacing:1px}
 .card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:16px 18px;margin-bottom:10px;transition:box-shadow .2s;box-shadow:0 1px 3px rgba(0,0,0,0.03)}

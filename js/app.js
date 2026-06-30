@@ -17,7 +17,11 @@ let ps=[],cyGZ,cmGZ,cdGZ,chGZ,wc,gst,gys,ggen;
 
 function showLoading(id){
     let el=document.getElementById(id);
-    if(el)el.innerHTML='<div style="text-align:center;padding:20px;color:#b8a49e;"><span style="display:inline-block;animation:spin .8s linear infinite;font-size:24px;">⟳</span><p style="margin-top:8px;font-size:13px;">正在排盘计算，请稍候...</p></div><style>@keyframes spin{0%{transform:rotate(0deg)}100%{transform:rotate(360deg)}}</style>';
+    if(!el||el.querySelector('.loading-spinner'))return;
+    let spinner=document.createElement('div');
+    spinner.className='loading-spinner';
+    spinner.innerHTML='<div style="text-align:center;padding:20px;color:#b8a49e;"><span style="display:inline-block;animation:spin .8s linear infinite;font-size:24px;">⟳</span><p style="margin-top:8px;font-size:13px;">正在排盘计算，请稍候...</p></div>';
+    el.prepend(spinner);
 }
 // ==================== 本地缓存 ====================
 function getCacheKey(y,m,d,hh,mm,gen,lon){return 'bz_'+y+'_'+m+'_'+d+'_'+hh+'_'+mm+'_'+gen+'_'+lon.toFixed(1);}
@@ -58,6 +62,8 @@ function calc(){
     ps.forEach(p=>{wc[SE[p.s]]++;wc[BE[p.b]]++;HD[p.b].forEach(h=>{let hi=S.indexOf(h);if(hi>=0)wc[SE[hi]]++;});});
     render(y,m,d,h,ggen);
     document.getElementById('res').style.display='block';
+    // 移除loading
+    let sp=document.querySelector('.loading-spinner');if(sp)sp.remove();
     // 自动展开所有结果卡片
     document.querySelectorAll('#res .card.collapsed').forEach(c=>c.classList.remove('collapsed'));
     try{setCache(ckey);}catch(e){}
@@ -1316,6 +1322,7 @@ function calcHepan(){
     document.getElementById('hpScore').innerHTML=hpScoreHTML;
 
     document.getElementById('hpResult').style.display='block';
+    let sp2=document.querySelector('.loading-spinner');if(sp2)sp2.remove();
     document.getElementById('hpResult').scrollIntoView({behavior:'smooth'});
     },10);
 }
@@ -1750,6 +1757,7 @@ function calcZiwei(){
 
     document.getElementById('zwAnalysis').innerHTML=analysis;
     document.getElementById('zwResult').style.display='block';
+    let sp3=document.querySelector('.loading-spinner');if(sp3)sp3.remove();
     document.getElementById('zwResult').scrollIntoView({behavior:'smooth'});
     },10);
 }
