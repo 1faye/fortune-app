@@ -237,6 +237,7 @@
 <div id="birthModal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);z-index:200;">
 <div style="background:#fff;max-width:480px;margin:40px auto;border-radius:16px;max-height:80vh;overflow:hidden;display:flex;flex-direction:column;">
 <div style="padding:12px 16px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;"><span style="font-weight:600;">选择出生地</span><button onclick="closeBirthModal()" style="border:none;background:none;font-size:20px;cursor:pointer;color:var(--text);">&times;</button></div>
+<div style="padding:8px 12px;border-bottom:1px solid var(--border);"><input type="text" id="birthSearch" oninput="filterBirthTree(this.value)" placeholder="🔍 输入城市名搜索（如：北京、海淀、南京）" style="width:100%;padding:10px 12px;border:1.5px solid var(--border);border-radius:10px;font-size:13px;background:#faf5f0;outline:none;font-family:inherit;box-sizing:border-box;"></div>
 <div style="padding:8px 4px;overflow-y:auto;flex:1;" id="birthTree"></div>
 </div></div>
 <div class="footer">八字排盘 · 六爻起卦专业系统 · 仅供娱乐参考 · AI生成内容请甄别</div></div>

@@ -15,7 +15,13 @@ function switchMode(mode){
 // ==================== GLOBALS ====================
 var ps=[],cyGZ,cmGZ,cdGZ,chGZ,wc,gst,gys,ggen;
 
+function showLoading(id){
+    let el=document.getElementById(id);
+    if(el)el.innerHTML='<div style="text-align:center;padding:20px;color:#b8a49e;"><span style="display:inline-block;animation:spin .8s linear infinite;font-size:24px;">⟳</span><p style="margin-top:8px;font-size:13px;">正在排盘计算，请稍候...</p></div><style>@keyframes spin{0%{transform:rotate(0deg)}100%{transform:rotate(360deg)}}</style>';
+}
 function calc(){
+    showLoading('res');
+    setTimeout(function(){
     let y=parseInt(document.getElementById('byear').value);
     let m=parseInt(document.getElementById('bmonth').value);
     let d=parseInt(document.getElementById('bday').value);
@@ -37,6 +43,7 @@ function calc(){
     render(y,m,d,h,ggen);
     document.getElementById('res').style.display='block';
     setTimeout(()=>document.getElementById('bazi').scrollIntoView({behavior:'smooth'}),100);
+    },10);
 }
 
 function render(y,m,d,h,gen){
@@ -724,6 +731,48 @@ function buildBirthTree(){
         else if(t.classList.contains('bt-pick')){document.getElementById('lonVal').value=t.dataset.lon;document.getElementById('birthBtn').textContent=t.dataset.name;closeBirthModal();}
     };
 }
+function filterBirthTree(q){
+    let tree=document.getElementById('birthTree');
+    if(!tree.innerHTML)buildBirthTree();
+    if(!q||q.length<1){buildBirthTree();return;}
+    let items=tree.querySelectorAll('.bt-toggle,.bt-pick');
+    // rebuild tree with only matching provinces/cities
+    let h='',idx=0;q=q.toLowerCase();
+    for(let prov in CITIES){
+        let provMatch=prov.includes(q),cityFound=false;
+        let cityHTML='';
+        for(let city in CITIES[prov]){
+            let cd=CITIES[prov][city],cityMatch=city.includes(q)||provMatch;
+            let districtHTML='';
+            if(Array.isArray(cd)){
+                if(q.includes(city)||q.includes(prov))cityMatch=true;
+                if(cityMatch)districtHTML+='<div class="bt-pick" data-lon="'+cd[1]+'" data-name="'+prov+' '+city+'" style="padding:6px 12px;cursor:pointer;">'+city+' ('+cd[1]+'°E)</div>';
+            }else{
+                for(let d in cd){
+                    let v=cd[d];
+                    if(d.includes(q)||cityMatch)districtHTML+='<div class="bt-pick" data-lon="'+v[1]+'" data-name="'+prov+' '+city+' → '+d+'" style="padding:6px 12px;cursor:pointer;">'+city+' → '+d+'</div>';
+                }
+                if(districtHTML)cityMatch=true;
+            }
+            if(cityMatch){
+                let cid='bp'+idx;idx++;
+                cityHTML+='<div style="padding-left:16px;"><div class="bt-toggle" data-target="'+cid+'" style="padding:8px 12px;cursor:pointer;color:var(--accent);">'+city+'</div><div id="'+cid+'" style="display:block;padding-left:16px;">'+districtHTML+'</div></div>';
+                cityFound=true;
+            }
+        }
+        if(cityFound){
+            let pid='bp'+idx;idx++;
+            h+='<div style="border-bottom:1px solid var(--border);"><div class="bt-toggle" data-target="'+pid+'" style="padding:10px 12px;cursor:pointer;font-weight:600;background:#fdf8f5;">'+prov+'</div><div id="'+pid+'" style="display:block;">'+cityHTML+'</div></div>';
+        }
+    }
+    if(!h)h='<div style="padding:20px;text-align:center;color:#b8a49e;">未找到「'+q+'」，试试其他关键词</div>';
+    tree.innerHTML=h;
+    tree.onclick=function(e){
+        let t=e.target;
+        if(t.classList.contains('bt-toggle')){let el=document.getElementById(t.dataset.target);if(el)el.style.display=el.style.display==='none'?'block':'none';}
+        else if(t.classList.contains('bt-pick')){document.getElementById('lonVal').value=t.dataset.lon;document.getElementById('birthBtn').textContent=t.dataset.name;closeBirthModal();}
+    };
+}
 function initSelects(){
     let defYear=1995;
     let by=document.getElementById('byear');let opts='';for(let i=2100;i>=1900;i--)opts+='<option value="'+i+'"'+(i===defYear?' selected':'')+'>'+i+'年</option>';by.innerHTML=opts;
@@ -783,6 +832,8 @@ function initHepanSelects(){
 }
 
 function calcHepan(){
+    showLoading('hpResult');
+    setTimeout(function(){
     let ay=parseInt(document.getElementById('hpAy').value),am=parseInt(document.getElementById('hpAm').value),ad=parseInt(document.getElementById('hpAd').value),ah=parseInt(document.getElementById('hpAh').value);
     let by=parseInt(document.getElementById('hpBy').value),bm=parseInt(document.getElementById('hpBm').value),bd=parseInt(document.getElementById('hpBd').value),bh=parseInt(document.getElementById('hpBh').value);
     let ag=document.querySelector('#hpAgt button.active').dataset.g;
@@ -1257,6 +1308,7 @@ function calcHepan(){
 
     document.getElementById('hpResult').style.display='block';
     document.getElementById('hpResult').scrollIntoView({behavior:'smooth'});
+    },10);
 }
 
 function calcPillars(y,m,d,hh,lon){
@@ -1280,6 +1332,8 @@ function renderMiniPillars(pillars){
 const ZW_GONG=['命宫','兄弟','夫妻','子女','财帛','疾厄','迁移','交友','官禄','田宅','福德','父母'];
 const ZW_STARS_MAP={0:'紫微',1:'天机',2:'太阳',3:'武曲',4:'天同',5:'廉贞',6:'天府',7:'太阴',8:'贪狼',9:'巨门',10:'天相',11:'天梁',12:'七杀',13:'破军'};
 function calcZiwei(){
+    showLoading('zwResult');
+    setTimeout(function(){
     let y=parseInt(document.getElementById('zwYear').value);
     let m=parseInt(document.getElementById('zwMonth').value);
     let d=parseInt(document.getElementById('zwDay').value);
@@ -1688,6 +1742,7 @@ function calcZiwei(){
     document.getElementById('zwAnalysis').innerHTML=analysis;
     document.getElementById('zwResult').style.display='block';
     document.getElementById('zwResult').scrollIntoView({behavior:'smooth'});
+    },10);
 }
 
 // ==================== 周易易经卦象对照 ====================
