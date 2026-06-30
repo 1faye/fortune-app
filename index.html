@@ -11,6 +11,9 @@
 <meta property="og:type" content="website">
 <meta name="theme-color" content="#d4847a">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><text y='56' font-size='56'>☯</text></svg>">
+<link rel="manifest" href="manifest.json">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
 <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
@@ -220,7 +223,7 @@
 <div id="hpResult" style="display:none;">
 <!-- 双方八字对照 - 对称设计 -->
 <div class="card"><div class="card-header" onclick="toggleCard(this)"><div class="card-title">💑 双方八字对照</div><span class="card-arrow">▼</span></div><div class="card-body"><div class="card-body-inner pt0">
-<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+<div class="hp-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
 <div style="background:#0a0a1e;border-radius:8px;padding:12px;border:1px solid var(--border);">
 <div style="font-size:11px;color:var(--accent);margin-bottom:6px;letter-spacing:2px;text-align:center;">⬆ 甲方</div><div id="hpAPillars"></div></div>
 <div style="background:#0a0a1e;border-radius:8px;padding:12px;border:1px solid var(--border);">
@@ -243,6 +246,7 @@
 <div class="footer">八字排盘 · 六爻起卦专业系统 · 仅供娱乐参考 · AI生成内容请甄别</div></div>
 
 <script src="app.min.js" defer></script>
+<script>if('serviceWorker'in navigator)navigator.serviceWorker.register('sw.js');</script>
 
 <!-- 回到顶部 -->
 <button id="backTop" style="position:fixed;bottom:24px;right:24px;width:44px;height:44px;border-radius:50%;border:none;background:linear-gradient(135deg,var(--accent2),var(--accent));color:#fff;font-size:20px;cursor:pointer;box-shadow:0 4px 16px rgba(212,132,122,.4);z-index:999;display:none;transition:all .3s;align-items:center;justify-content:center;">↑</button>

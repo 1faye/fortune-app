@@ -13,22 +13,34 @@ function switchMode(mode){
 }
 
 // ==================== GLOBALS ====================
-var ps=[],cyGZ,cmGZ,cdGZ,chGZ,wc,gst,gys,ggen;
+let ps=[],cyGZ,cmGZ,cdGZ,chGZ,wc,gst,gys,ggen;
 
 function showLoading(id){
     let el=document.getElementById(id);
     if(el)el.innerHTML='<div style="text-align:center;padding:20px;color:#b8a49e;"><span style="display:inline-block;animation:spin .8s linear infinite;font-size:24px;">⟳</span><p style="margin-top:8px;font-size:13px;">正在排盘计算，请稍候...</p></div><style>@keyframes spin{0%{transform:rotate(0deg)}100%{transform:rotate(360deg)}}</style>';
 }
+// ==================== 本地缓存 ====================
+function getCacheKey(y,m,d,hh,mm,gen,lon){return 'bz_'+y+'_'+m+'_'+d+'_'+hh+'_'+mm+'_'+gen+'_'+lon.toFixed(1);}
+function tryCache(key){
+    try{let c=JSON.parse(localStorage.getItem(key));if(c&&c.data){document.getElementById('res').innerHTML=c.data;document.getElementById('res').style.display='block';return true;}}catch(e){}
+    return false;
+}
+function setCache(key){try{let h=document.getElementById('res').innerHTML;let list=JSON.parse(localStorage.getItem('bz_cache_list')||'[]');list=list.filter(k=>k!==key);list.unshift(key);if(list.length>5){let old=list.pop();localStorage.removeItem(old);}localStorage.setItem('bz_cache_list',JSON.stringify(list));localStorage.setItem(key,JSON.stringify({t:Date.now(),data:h}));}catch(e){}}
+
 function calc(){
     // 输入校验
     let byEl=document.getElementById('byear');
-    if(!byEl||!byEl.value){alert('请选择出生年份');return;}
+    if(!byEl||!byEl.value){let el=document.getElementById('res');el.style.display='block';el.innerHTML='<div style="text-align:center;padding:20px;color:var(--red);font-size:13px;">⚠️ 请选择出生年份</div>';return;}
     let y=parseInt(byEl.value);
     let m=parseInt(document.getElementById('bmonth').value);
     let d=parseInt(document.getElementById('bday').value);
     let hh=parseInt(document.getElementById('bhour').value);
     let mm=parseInt(document.getElementById('bmin').value);
-    if(y<1900||y>2100||m<1||m>12||d<1||d>31||hh<0||hh>23){alert('请填写有效的出生日期');return;}
+    if(y<1900||y>2100||m<1||m>12||d<1||d>31||hh<0||hh>23){let el=document.getElementById('res');el.style.display='block';el.innerHTML='<div style="text-align:center;padding:20px;color:var(--red);font-size:13px;">⚠️ 请填写有效的出生日期</div>';return;}
+    let lon=parseFloat(document.getElementById('lonVal').value)||116.4;
+    let gen=document.querySelector('#gt button.active').dataset.g;
+    let ckey=getCacheKey(y,m,d,hh,mm,gen,lon);
+    if(tryCache(ckey)){setTimeout(()=>document.getElementById('bazi').scrollIntoView({behavior:'smooth'}),100);return;}
     showLoading('res');
     setTimeout(function(){
     let lon=parseFloat(document.getElementById('lonVal').value)||116.4;
@@ -46,6 +58,9 @@ function calc(){
     ps.forEach(p=>{wc[SE[p.s]]++;wc[BE[p.b]]++;HD[p.b].forEach(h=>{let hi=S.indexOf(h);if(hi>=0)wc[SE[hi]]++;});});
     render(y,m,d,h,ggen);
     document.getElementById('res').style.display='block';
+    // 自动展开所有结果卡片
+    document.querySelectorAll('#res .card.collapsed').forEach(c=>c.classList.remove('collapsed'));
+    try{setCache(ckey);}catch(e){}
     setTimeout(()=>document.getElementById('bazi').scrollIntoView({behavior:'smooth'}),100);
     },10);
 }
@@ -387,27 +402,16 @@ function dayun(yGZ,y,m,d,h,gen){
 
 function toggleCard(header){let card=header.closest('.card');if(card.id==='input')return;card.classList.toggle('collapsed');}
 
+function mkOpts(n,sel,start,end,pad){let a=[];for(let i=start;i<=end;i++){let v=pad?String(i).padStart(2,'0'):i;a.push('<option value="'+i+'"'+(i===sel?' selected':'')+'>'+v+n+'</option>');}return a.join('');}
+
 // ==================== 时间选择器 ====================
 function initTimeSelectors(){
     let cy=new Date().getFullYear();
     // 流年选择器
-    let lnSel=document.getElementById('lnYearSel');
-    lnSel.innerHTML='';
-    for(let i=cy-5;i<=cy+5;i++){lnSel.innerHTML+='<option value="'+i+'"'+(i===cy?' selected':'')+'>'+i+'年</option>';}
-    // 流月选择器
-    let lyYSel=document.getElementById('lyYearSel');
-    lyYSel.innerHTML='';
-    for(let i=cy-5;i<=cy+5;i++){lyYSel.innerHTML+='<option value="'+i+'"'+(i===cy?' selected':'')+'>'+i+'年</option>';}
-    let lyMSel=document.getElementById('lyMonthSel');
-    lyMSel.innerHTML='';
-    for(let i=1;i<=12;i++){lyMSel.innerHTML+='<option value="'+i+'"'+(i===new Date().getMonth()+1?' selected':'')+'>'+i+'月</option>';}
-    // 流日选择器
-    let lrYSel=document.getElementById('lrYearSel');
-    lrYSel.innerHTML='';
-    for(let i=cy-5;i<=cy+5;i++){lrYSel.innerHTML+='<option value="'+i+'"'+(i===cy?' selected':'')+'>'+i+'年</option>';}
-    let lrMSel=document.getElementById('lrMonthSel');
-    lrMSel.innerHTML='';
-    for(let i=1;i<=12;i++){lrMSel.innerHTML+='<option value="'+i+'"'+(i===new Date().getMonth()+1?' selected':'')+'>'+i+'月</option>';}
+    document.getElementById('lnYearSel').innerHTML=mkOpts('年',cy,cy-5,cy+5);
+    document.getElementById('lyYearSel').innerHTML=mkOpts('年',cy,cy-5,cy+5);
+    document.getElementById('lyMonthSel').innerHTML=mkOpts('月',new Date().getMonth()+1,1,12);
+    document.getElementById('lrMonthSel').innerHTML=mkOpts('月',new Date().getMonth()+1,1,12);
     updateLrDays();
 }
 
@@ -417,8 +421,7 @@ function updateLrDays(){
     let days=m===2?(y%4===0&&y%100!==0||y%400===0?29:28):([4,6,9,11].includes(m)?30:31);
     let lrDSel=document.getElementById('lrDaySel');
     let cur=parseInt(lrDSel.value)||new Date().getDate();
-    lrDSel.innerHTML='';
-    for(let i=1;i<=days;i++){lrDSel.innerHTML+='<option value="'+i+'"'+(i===Math.min(cur,days)?' selected':'')+'>'+i+'日</option>';}
+    lrDSel.innerHTML=mkOpts('日',Math.min(cur,days),1,days);
 }
 
 function analyzeTimeStem(gzStem,gzBranch,dayStem,fullPillars,gender,lon){
@@ -791,8 +794,7 @@ function initSelects(){
 function updateDays(){
     let y=parseInt(document.getElementById('byear').value),m=parseInt(document.getElementById('bmonth').value);
     let days=m===2?(y%4===0&&y%100!==0||y%400===0?29:28):([4,6,9,11].includes(m)?30:31);
-    let bd=document.getElementById('bday');let cur=parseInt(bd.value)||1;
-    bd.innerHTML='';for(let i=1;i<=days;i++)bd.innerHTML+='<option value="'+i+'"'+(i===Math.min(cur,days)?' selected':'')+'>'+i+'日</option>';
+    document.getElementById('bday').innerHTML=mkOpts('日',Math.min(parseInt(document.getElementById('bday').value)||1,days),1,days);
 }
 
 document.addEventListener('DOMContentLoaded',()=>{
@@ -810,32 +812,32 @@ document.addEventListener('DOMContentLoaded',()=>{
     initHepanSelects();
     document.querySelectorAll('#hpAgt button,#hpBgt button').forEach(b=>{b.addEventListener('click',()=>{let toggle=b.closest('.gender-toggle');toggle.querySelectorAll('button').forEach(x=>x.classList.remove('active'));b.classList.add('active');});});
     // 初始化小六壬
-    for(let i=1;i<=12;i++)document.getElementById('lrMonth').innerHTML+='<option value="'+i+'">'+i+'月</option>';
-    for(let i=1;i<=30;i++)document.getElementById('lrDay').innerHTML+='<option value="'+i+'"'+(i===1?' selected':'')+'>'+i+'日</option>';
+    document.getElementById('lrMonth').innerHTML=mkOpts('月',1,1,12);
+    document.getElementById('lrDay').innerHTML=mkOpts('日',1,1,30);
     // 初始化称骨
     let cy=new Date().getFullYear();let o='';for(let i=2100;i>=1900;i--)o+='<option value="'+i+'"'+(i===cy?' selected':'')+'>'+i+'年</option>';document.getElementById('cgYear').innerHTML=o;
-    for(let i=1;i<=12;i++)document.getElementById('cgMonth').innerHTML+='<option value="'+i+'">'+i+'月</option>';
-    for(let i=1;i<=30;i++)document.getElementById('cgDay').innerHTML+='<option value="'+i+'"'+(i===1?' selected':'')+'>'+i+'日</option>';
+    document.getElementById('cgMonth').innerHTML=mkOpts('月',1,1,12);
+    document.getElementById('cgDay').innerHTML=mkOpts('日',1,1,30);
     document.querySelectorAll('#cgGt button').forEach(b=>{b.addEventListener('click',()=>{document.querySelectorAll('#cgGt button').forEach(x=>x.classList.remove('active'));b.classList.add('active');});});
 });
 
 // ==================== 合盘地点联动 ====================
-function hpUpdateCities(p){let pfx=p==='A'?'hpA':'hpB';let pv=document.getElementById(pfx+'pv').value;let cs=document.getElementById(pfx+'cy');cs.innerHTML='<option value="">不限</option>';if(pv&&CITIES[pv]){Object.keys(CITIES[pv]).forEach(ct=>{cs.innerHTML+='<option value="'+ct+'">'+ct+'</option>';});}hpUpdateDistricts(p);}
-function hpUpdateDistricts(p){let pfx=p==='A'?'hpA':'hpB';let pv=document.getElementById(pfx+'pv').value;let ct=document.getElementById(pfx+'cy').value;let ds=document.getElementById(pfx+'ds');ds.innerHTML='<option value="">不限</option>';let lh=document.getElementById(pfx+'lon');if(pv&&ct&&CITIES[pv]&&CITIES[pv][ct]){let cd=CITIES[pv][ct];if(Array.isArray(cd)){lh.value=cd[1];ds.innerHTML+='<option value="'+ct+'|'+cd[0]+'|'+cd[1]+'" selected>'+ct+' ('+cd[1]+'°E)</option>';}else if(typeof cd==='object'){for(let d in cd){let v=cd[d];ds.innerHTML+='<option value="'+d+'|'+v[0]+'|'+v[1]+'">'+d+'</option>';}if(Object.keys(cd).length>0){let fk=Object.keys(cd)[0];ds.value=fk+'|'+cd[fk][0]+'|'+cd[fk][1];lh.value=cd[fk][1];}}}else{lh.value='116.4';}}
+function hpUpdateCities(p){let pfx=p==='A'?'hpA':'hpB';let pv=document.getElementById(pfx+'pv').value;let cs=document.getElementById(pfx+'cy');if(pv&&CITIES[pv]){cs.innerHTML='<option value="">不限</option>'+Object.keys(CITIES[pv]).map(ct=>'<option value="'+ct+'">'+ct+'</option>').join('');}else{cs.innerHTML='<option value="">不限</option>';}hpUpdateDistricts(p);}
+function hpUpdateDistricts(p){let pfx=p==='A'?'hpA':'hpB';let pv=document.getElementById(pfx+'pv').value;let ct=document.getElementById(pfx+'cy').value;let ds=document.getElementById(pfx+'ds');let lh=document.getElementById(pfx+'lon');if(pv&&ct&&CITIES[pv]&&CITIES[pv][ct]){let cd=CITIES[pv][ct];if(Array.isArray(cd)){lh.value=cd[1];ds.innerHTML='<option value="">不限</option><option value="'+ct+'|'+cd[0]+'|'+cd[1]+'" selected>'+ct+' ('+cd[1]+'°E)</option>';}else if(typeof cd==='object'){let opts=['<option value="">不限</option>'];for(let d in cd){let v=cd[d];opts.push('<option value="'+d+'|'+v[0]+'|'+v[1]+'">'+d+'</option>');}ds.innerHTML=opts.join('');let fk=Object.keys(cd)[0];ds.value=fk+'|'+cd[fk][0]+'|'+cd[fk][1];lh.value=cd[fk][1];}}else{ds.innerHTML='<option value="">不限</option>';lh.value='116.4';}}
 
 // ==================== 合盘分析 ====================
 function initHepanSelects(){
     let ctrlPairs=[['hpAy','hpAm','hpAd','hpAh'],['hpBy','hpBm','hpBd','hpBh']];
     ctrlPairs.forEach(([yId,mId,dId,hId],idx)=>{
         let cy=new Date().getFullYear();
-        let ys=document.getElementById(yId);let o='';for(let i=2100;i>=1900;i--)o+='<option value="'+i+'"'+(i===cy?' selected':'')+'>'+i+'年</option>';ys.innerHTML=o;
-        let ms=document.getElementById(mId);for(let i=1;i<=12;i++)ms.innerHTML+='<option value="'+i+'"'+(i===1?' selected':'')+'>'+i+'月</option>';
-        let ds=document.getElementById(dId);for(let i=1;i<=31;i++)ds.innerHTML+='<option value="'+i+'"'+(i===1?' selected':'')+'>'+i+'日</option>';
-        let hs=document.getElementById(hId);for(let i=0;i<24;i++)hs.innerHTML+='<option value="'+i+'"'+(i===12?' selected':'')+'>'+String(i).padStart(2,'0')+'时</option>';
+        document.getElementById(yId).innerHTML=mkOpts('年',cy,1900,2100);
+        document.getElementById(mId).innerHTML=mkOpts('月',1,1,12);
+        document.getElementById(dId).innerHTML=mkOpts('日',1,1,31);
+        document.getElementById(hId).innerHTML=mkOpts('时',12,0,23,'0');
     });
     // 初始化合盘省份选择
     let provinces=['北京','上海','天津','重庆','河北','山西','辽宁','吉林','黑龙江','江苏','浙江','安徽','福建','江西','山东','河南','湖北','湖南','广东','海南','四川','贵州','云南','陕西','甘肃','青海','台湾','内蒙古','广西','西藏','宁夏','新疆','香港','澳门'];
-    ['hpApv','hpBpv'].forEach(id=>{let s=document.getElementById(id);provinces.forEach(p=>{s.innerHTML+='<option value="'+p+'">'+p+'</option>';});});
+    ['hpApv','hpBpv'].forEach(id=>{document.getElementById(id).innerHTML=provinces.map(p=>'<option value="'+p+'">'+p+'</option>').join('');});
 }
 
 function calcHepan(){
@@ -1779,10 +1781,11 @@ function getZhouyiHexagram(stemIdx, branchIdx){
 }
 
 function initZiweiSelects(){
-    let ys=document.getElementById('zwYear');for(let i=2100;i>=1900;i--)ys.innerHTML+='<option value="'+i+'"'+(i===2000?' selected':'')+'>'+i+'年</option>';
-    let ms=document.getElementById('zwMonth');for(let i=1;i<=12;i++)ms.innerHTML+='<option value="'+i+'"'+(i===1?' selected':'')+'>'+i+'月</option>';
-    let ds=document.getElementById('zwDay');for(let i=1;i<=31;i++)ds.innerHTML+='<option value="'+i+'"'+(i===1?' selected':'')+'>'+i+'日</option>';
-    let zs=document.getElementById('zwMin');for(let i=0;i<60;i++)zs.innerHTML+='<option value="'+i+'"'+(i===0?' selected':'')+'>'+String(i).padStart(2,'0')+'分</option>';
+    document.getElementById('zwYear').innerHTML=mkOpts('年',2000,1900,2100);
+    document.getElementById('zwMonth').innerHTML=mkOpts('月',1,1,12);
+    document.getElementById('zwDay').innerHTML=mkOpts('日',1,1,31);
+    let a=[];for(let i=0;i<60;i++)a.push('<option value="'+i+'"'+(i===0?' selected':'')+'>'+String(i).padStart(2,'0')+'分</option>');
+    document.getElementById('zwMin').innerHTML=a.join('');
 }
 
 // ==================== 十神格局解析 ====================

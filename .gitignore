@@ -4,3 +4,6 @@ server.py
 node_modules/
 app.bak.js
 _push.py
+*.bak
+server.py.bak
+app.bak.js.bak

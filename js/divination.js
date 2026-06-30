@@ -66,7 +66,7 @@ const HEXAGRAMS=[
 {id:64,name:'火水未济',sym:'䷿',gua:'☲☵',desc:'尚未完成，宜继续努力。',upper:4,lower:6}
 ];
 const LIUSHOU=['青龙','朱雀','勾陈','腾蛇','白虎','玄武'];
-var coinYao=[],coinIdx=0,qiguaRes=null;
+let coinYao=[],coinIdx=0,qiguaRes=null;
 
 function timeQigua(){
     let dv=document.getElementById('qgDate').value||new Date().toISOString().split('T')[0];
