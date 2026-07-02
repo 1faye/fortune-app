@@ -2,3 +2,10 @@ node_modules/
 .env
 *.log
 .DS_Store
+*.gz
+server.py
+app.bak.js
+_push.py
+*.bak
+server.py.bak
+app.bak.js.bak
