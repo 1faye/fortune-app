@@ -1,0 +1,347 @@
+/*! 八字排盘 · 六爻起卦 · 水墨国风版 - Styles */
+:root{
+  /* 国风主色：宣纸、墨、朱砂、鎏金 */
+  --bg:#f5f0e6;            /* 宣纸底 */
+  --card:#fbf7ef;          /* 浅宣纸 */
+  --text:#2b2b2b;          /* 墨色文字 */
+  --text-soft:#5a5048;     /* 淡墨 */
+  --accent:#a8322d;        /* 朱砂 */
+  --accent2:#c4493f;       /* 朱砂亮 */
+  --gold:#b89968;          /* 鎏金 */
+  --gold-soft:#d4c4a0;     /* 淡金 */
+  --border:#d8cfc0;        /* 淡墨分隔 */
+  --hover:#efe8d8;         /* 悬停暖纸 */
+  /* 五行国风色（低饱和） */
+  --wood:#5a7a4a;  --木:#5a7a4a;   /* 青松 */
+  --fire:#a8443a;  --火:#a8443a;   /* 朱砂 */
+  --earth:#a8884a; --土:#a8884a;   /* 赭石 */
+  --metal:#b89968; --金:#b89968;   /* 鎏金 */
+  --water:#3a5a6a; --水:#3a5a6a;   /* 黛青 */
+  /* 语义色 */
+  --red:#a8322d; --green:#5a7a4a; --blue:#3a5a6a; --orange:#b87838; --purple:#7a5a8a; --pink:#c47878;
+  --gradient-start:#c4493f; --gradient-end:#a8322d;
+  --ink:#1a1a1a;           /* 浓墨（顶栏用） */
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{
+  font-family:"PingFang SC","Microsoft YaHei","Hiragino Sans GB",sans-serif;
+  background:var(--bg);
+  color:var(--text);
+  min-height:100vh;
+  padding:0;
+  /* 宣纸纹理 + 角落淡墨晕染 */
+  background-image:
+    radial-gradient(ellipse at 15% 0%,rgba(168,50,45,0.05) 0%,transparent 45%),
+    radial-gradient(ellipse at 85% 95%,rgba(58,90,106,0.06) 0%,transparent 50%),
+    repeating-linear-gradient(45deg,transparent 0,transparent 2px,rgba(184,153,104,0.012) 2px,rgba(184,153,104,0.012) 4px);
+}
+.container{max-width:680px;margin:0 auto;padding:0 14px 44px}
+
+/* ===== 顶栏（深墨底 + 鎏金字） ===== */
+.nav{
+  position:sticky;top:0;z-index:100;
+  background:linear-gradient(180deg,var(--ink) 0%,#25201a 100%);
+  border-bottom:2px solid var(--gold);
+  padding:9px 0;
+  margin-bottom:14px;
+  box-shadow:0 3px 12px rgba(0,0,0,0.18);
+}
+.nav-inner{
+  max-width:680px;margin:0 auto;display:flex;gap:2px;flex-wrap:wrap;align-items:center;padding:0 10px;
+  background:transparent;border:none;border-radius:0;box-shadow:none;
+}
+.nav a{
+  font-size:11px;color:var(--gold-soft);text-decoration:none;
+  padding:8px 12px;border-radius:4px;letter-spacing:2px;transition:all .2s;
+  white-space:nowrap;cursor:pointer;flex:1;text-align:center;font-weight:500;
+  border:1px solid transparent;
+  font-family:"STKaiti","KaiTi","Songti SC",serif;
+}
+.nav a:hover{color:var(--gold);background:rgba(184,153,104,0.12);border-color:rgba(184,153,104,0.25)}
+.nav a.active{
+  color:#fff;background:linear-gradient(180deg,var(--accent2),var(--accent));
+  font-weight:600;box-shadow:0 2px 8px rgba(168,50,45,0.4);
+  border-color:var(--gold);letter-spacing:2px;
+}
+.nav .tab-divider{display:none}
+.nav .mode-tab{font-weight:600;font-size:12px}
+
+/* ===== 标题区 ===== */
+.header{text-align:center;padding:22px 0 14px}
+.header .bagua{
+  font-size:42px;margin-bottom:4px;animation:float 3.5s ease-in-out infinite;display:inline-block;
+  color:var(--ink);
+  filter:drop-shadow(0 0 10px rgba(168,50,45,0.18));
+}
+@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}}
+@keyframes spin{0%{transform:rotate(0deg)}100%{transform:rotate(360deg)}}
+.header h1{
+  font-size:24px;color:var(--ink);letter-spacing:6px;font-weight:700;
+  font-family:"STKaiti","KaiTi","Songti SC",serif;
+  position:relative;display:inline-block;padding:0 20px;
+}
+/* 标题左右朱砂装饰 */
+.header h1::before,.header h1::after{
+  content:'';position:absolute;top:50%;width:24px;height:1px;
+  background:linear-gradient(90deg,transparent,var(--accent));
+}
+.header h1::before{left:-8px;background:linear-gradient(90deg,var(--accent),transparent)}
+.header h1::after{right:-8px}
+.header .subtitle{
+  font-size:11px;color:var(--text-soft);margin-top:6px;letter-spacing:3px;
+  font-family:"STKaiti","KaiTi","Songti SC",serif;
+}
+
+/* ===== 卡片（宣纸感 + 朱砂竖条标题） ===== */
+.card{
+  background:var(--card);
+  border:1px solid var(--border);
+  border-radius:6px;            /* 国风用小圆角 */
+  padding:16px 20px;margin-bottom:12px;
+  transition:box-shadow .2s,transform .2s;
+  box-shadow:0 1px 4px rgba(43,43,43,0.05);
+  position:relative;
+}
+.card::before{
+  /* 左侧朱砂细线 */
+  content:'';position:absolute;left:0;top:14px;bottom:14px;width:2px;
+  background:linear-gradient(180deg,var(--accent),var(--gold));border-radius:1px;opacity:.5;
+}
+.card:hover{box-shadow:0 4px 16px rgba(43,43,43,0.1);transform:translateY(-1px)}
+.card-header{display:flex;align-items:center;justify-content:space-between;cursor:pointer;user-select:none}
+.card-title{
+  font-size:14px;color:var(--ink);letter-spacing:2px;display:flex;align-items:center;gap:8px;
+  font-family:"STKaiti","KaiTi","Songti SC",serif;font-weight:700;
+}
+.card-title::before{
+  content:'';display:inline-block;width:4px;height:14px;
+  background:var(--accent);border-radius:1px;
+}
+.card-arrow{font-size:10px;color:var(--gold);transition:transform .3s}
+.card.collapsed .card-arrow{transform:rotate(-90deg)}
+.card-body{overflow:hidden;transition:max-height .4s;max-height:6000px}
+.card.collapsed .card-body{max-height:0;padding-top:0;padding-bottom:0;overflow:hidden}
+.card-body-inner{padding-top:13px}
+.card-body-inner.pt0{padding-top:0}
+
+.form-end{justify-content:flex-end}
+.info-box{
+  background:linear-gradient(180deg,#f3ecdd,#efe8d8);
+  border-radius:6px;padding:12px;margin-bottom:10px;border:1px solid var(--border);
+}
+.dark-box{background:var(--ink);border-radius:6px;padding:12px;border:1px solid var(--gold)}
+.form-row{display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end}
+.form-group{display:flex;flex-direction:column;gap:4px;flex:1;min-width:90px}
+.form-group label{font-size:10px;color:var(--text-soft);letter-spacing:1px;font-family:"STKaiti","KaiTi",serif}
+.form-group input,.form-group select{
+  background:#f5efe2;border:1.5px solid var(--border);color:var(--text);
+  padding:10px 12px;border-radius:5px;font-size:13px;font-family:inherit;outline:none;
+  transition:all .2s;appearance:none;-webkit-appearance:none;min-height:40px;
+}
+.form-group input:focus,.form-group select:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(168,50,45,0.1)}
+.form-group select{
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23a8322d' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:right 10px center;padding-right:30px;cursor:pointer;
+}
+.btn{
+  background:linear-gradient(135deg,var(--accent2),var(--accent));
+  color:#fff;border:none;padding:10px 24px;border-radius:4px;
+  font-size:13px;font-weight:600;letter-spacing:3px;cursor:pointer;transition:all .3s;
+  font-family:"STKaiti","KaiTi","Songti SC",serif;white-space:nowrap;
+  box-shadow:0 2px 8px rgba(168,50,45,0.25);
+}
+.btn:hover{transform:translateY(-1px);box-shadow:0 4px 16px rgba(168,50,45,0.35)}
+.btn:active{transform:scale(0.97)}
+.gender-toggle{display:flex;border-radius:5px;overflow:hidden;border:1.5px solid var(--border)}
+.gender-toggle button{flex:1;padding:10px 14px;border:none;background:#f5efe2;color:var(--text-soft);cursor:pointer;font-size:12px;font-family:inherit;transition:all .2s;min-height:40px}
+.gender-toggle button.active{background:var(--accent);color:#fff;font-weight:600}
+
+/* ===== 八字表 ===== */
+.bazi-table{display:grid;grid-template-columns:36px repeat(4,1fr);gap:4px;text-align:center;margin-bottom:2px}
+.bazi-table .hcell{font-size:10px;color:var(--text-soft);padding:4px 0;letter-spacing:1px;font-family:"STKaiti","KaiTi",serif}
+.bazi-table .lbl{font-size:9px;color:var(--gold);display:flex;align-items:center;justify-content:center;writing-mode:vertical-lr;letter-spacing:2px;font-family:"STKaiti","KaiTi",serif}
+.bazi-table .scell{
+  background:linear-gradient(180deg,#f3ecdd,#ede4d0);
+  border-radius:5px 5px 0 0;padding:10px 4px 4px;font-size:19px;font-weight:700;
+  border:1px solid var(--border);border-bottom:none;color:var(--ink);
+  font-family:"STKaiti","KaiTi","Songti SC",serif;
+}
+.bazi-table .bcell{
+  background:linear-gradient(180deg,#f3ecdd,#ede4d0);
+  border-radius:0 0 5px 5px;padding:4px 4px 10px;font-size:19px;font-weight:700;
+  border:1px solid var(--border);border-top:none;color:var(--ink);
+  font-family:"STKaiti","KaiTi","Songti SC",serif;
+}
+.bazi-table .elabel{font-size:8px;color:var(--text-soft);margin-top:1px}
+.info-row{display:grid;grid-template-columns:repeat(4,1fr);gap:4px;text-align:center;font-size:9px;color:var(--text-soft);margin-top:2px}
+
+/* ===== 五行色 ===== */
+.wx-木{color:var(--wood)}.wx-火{color:var(--fire)}.wx-土{color:var(--earth)}.wx-金{color:var(--metal)}.wx-水{color:var(--water)}
+.etag{display:inline-block;font-size:8px;padding:1px 6px;border-radius:3px;font-weight:500}
+.etag.木{background:rgba(90,122,74,0.14);color:var(--wood)}
+.etag.火{background:rgba(168,68,58,0.14);color:var(--fire)}
+.etag.土{background:rgba(168,136,74,0.14);color:var(--earth)}
+.etag.金{background:rgba(184,153,104,0.16);color:var(--metal)}
+.etag.水{background:rgba(58,90,106,0.14);color:var(--water)}
+
+/* ===== 总览网格 ===== */
+.summary-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:6px}
+.sum-item{background:linear-gradient(180deg,#f3ecdd,#efe8d8);border-radius:5px;padding:11px 8px;text-align:center;border:1px solid var(--border)}
+.sum-item .s-label{font-size:10px;color:var(--text-soft);letter-spacing:1px;font-family:"STKaiti","KaiTi",serif}
+.sum-item .s-value{font-size:15px;font-weight:700;margin-top:2px;color:var(--ink)}
+.sum-item .s-sub{font-size:9px;color:var(--gold);margin-top:1px}
+.ys-box{background:linear-gradient(180deg,#f3ecdd,#efe8d8);border-radius:5px;padding:10px 12px;margin-top:8px;border:1px solid var(--border);display:flex;flex-wrap:wrap;gap:6px}
+.ys-tag{display:inline-flex;flex-direction:column;padding:6px 10px;border-radius:4px;font-size:10px;gap:2px;max-width:180px}
+.ys-tag.ys-xi{background:rgba(90,122,74,0.12);border:1px solid rgba(90,122,74,0.25);color:var(--green)}
+.ys-tag.ys-ji{background:rgba(168,50,45,0.08);border:1px solid rgba(168,50,45,0.2);color:var(--red)}
+.ys-tag .ys-head{font-weight:700;font-size:11px}.ys-tag .ys-body{font-size:9px;opacity:0.85;line-height:1.4}
+
+/* ===== 五行柱状 ===== */
+.wx-bars{display:flex;gap:6px;flex-wrap:wrap}
+.wx-bar{flex:1;min-width:50px;text-align:center;background:linear-gradient(180deg,#f3ecdd,#efe8d8);border-radius:5px;padding:8px 6px;border:1px solid var(--border)}
+.wx-bar .wx-name{font-size:11px;color:var(--text-soft);letter-spacing:2px;margin-bottom:2px;font-family:"STKaiti","KaiTi",serif}
+.wx-bar .wx-num{font-size:22px;font-weight:700;color:var(--ink)}
+.wx-bar .bar-track{height:4px;background:var(--border);border-radius:2px;margin-top:4px;overflow:hidden}
+.wx-bar .bar-fill{height:100%;border-radius:2px;transition:width .6s ease}
+
+/* ===== 十神表 ===== */
+.ss-table{width:100%;border-collapse:collapse;font-size:11px}
+.ss-table th,.ss-table td{padding:6px 6px;text-align:center;border-bottom:1px solid var(--border)}
+.ss-table th{color:var(--text-soft);font-size:10px;letter-spacing:1px;font-weight:400;font-family:"STKaiti","KaiTi",serif}
+.ss-table td{color:var(--text)}
+
+/* ===== 大运 / 流年 ===== */
+.dayun-row{display:flex;gap:3px;flex-wrap:wrap}
+.dayun-item{flex:1;min-width:60px;background:linear-gradient(180deg,#f3ecdd,#efe8d8);border-radius:5px;padding:6px 3px;text-align:center;border:1px solid var(--border);transition:all .2s}
+.dayun-item .dy-stem{font-size:14px;font-weight:700;color:var(--ink);font-family:"STKaiti","KaiTi",serif}
+.dayun-item .dy-branch{font-size:12px;margin-top:1px;color:var(--ink);font-family:"STKaiti","KaiTi",serif}
+.dayun-item .dy-age{font-size:9px;color:var(--gold);margin-top:1px}
+.dayun-item.current{border-color:var(--accent);box-shadow:0 2px 8px rgba(168,50,45,0.18);background:linear-gradient(180deg,#f7e6e3,#f3ecdd)}
+.liunian-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(64px,1fr));gap:3px}
+.ln-item{background:linear-gradient(180deg,#f3ecdd,#efe8d8);border-radius:5px;padding:6px 3px;text-align:center;font-size:10px;border:1px solid var(--border);transition:all .2s}
+.ln-item .ln-year{font-size:8px;color:var(--text-soft)}.ln-item .ln-gz{font-size:11px;font-weight:600;margin-top:1px;color:var(--ink);font-family:"STKaiti","KaiTi",serif}
+.ln-item.current{border-color:var(--accent);background:linear-gradient(180deg,#f7e6e3,#f3ecdd)}
+.tag-row{display:flex;gap:4px;flex-wrap:wrap}
+.sha-tag{font-size:9px;padding:2px 7px;border-radius:3px;background:#f3ecdd;border:1px solid var(--border);color:var(--text);line-height:1.5}
+.sha-tag.warn{border-color:rgba(168,50,45,0.35);color:var(--red);background:rgba(168,50,45,0.06)}
+
+/* ===== 分析文本 ===== */
+.analysis-text{font-size:12px;line-height:1.9;color:var(--text)}
+.analysis-text p{margin:6px 0;text-indent:2em}
+.analysis-text strong{color:var(--accent);font-weight:600}
+.analysis-text em{color:var(--red);font-style:normal;font-weight:600}
+
+.ts-info{text-align:center;font-size:10px;color:var(--text-soft);margin-top:4px;padding:7px;background:linear-gradient(180deg,#f3ecdd,#efe8d8);border-radius:5px}
+.hs-row{display:flex;align-items:center;gap:6px;padding:3px 0;font-size:11px;color:var(--text);border-bottom:1px solid var(--border)}
+.hs-row:last-child{border-bottom:none}.hs-name{width:32px;color:var(--gold);font-size:10px;font-family:"STKaiti","KaiTi",serif}
+.ss-good{color:var(--green)}.ss-mid{color:var(--orange)}.ss-bad{color:var(--red)}
+
+.footer{text-align:center;font-size:10px;color:var(--gold);padding:18px 0;letter-spacing:2px;font-family:"STKaiti","KaiTi",serif}
+
+.ln-table-sm{width:100%;border-collapse:collapse;font-size:10px;margin-top:4px}
+.ln-table-sm th,.ln-table-sm td{padding:4px 3px;text-align:center;border:1px solid var(--border);font-size:9px}
+.ln-table-sm th{background:#f3ecdd;color:var(--text-soft);font-weight:400}
+.ln-table-sm td{color:var(--text)}.ln-table-sm .warn{color:var(--red)}.ln-table-sm .good{color:var(--green)}
+
+/* ===== 占卜卦象 ===== */
+.hexagram-display{text-align:center;padding:16px 0}
+.hexagram-name{font-size:26px;color:var(--accent);letter-spacing:3px;font-weight:700;font-family:"STKaiti","KaiTi","Songti SC",serif}
+.hexagram-sub{font-size:11px;color:var(--gold);letter-spacing:2px;margin-top:2px;font-family:"STKaiti","KaiTi",serif}
+.yao-row{display:flex;flex-direction:column;align-items:center;gap:2px;margin:12px 0}
+.yao-line{display:flex;align-items:center;gap:10px;padding:5px 0;font-size:12px;width:100%;max-width:480px}
+.yao-line .yao-index{width:24px;text-align:right;font-size:10px;color:var(--gold)}
+.yao-line .yao-symbol{font-size:16px;font-weight:700;width:36px;text-align:center;letter-spacing:1px}
+.yao-line .yao-symbol.yang{color:var(--accent)}.yao-line .yao-symbol.yin{color:var(--text-soft)}
+.yao-line .yao-detail{flex:1;font-size:10px;color:var(--text);display:flex;gap:8px;flex-wrap:wrap}
+.yao-line .yao-detail span{padding:1px 6px;border-radius:3px;background:#f3ecdd}
+.yao-line.yao-change{background:rgba(168,50,45,0.07);border-radius:4px}
+.yao-line.yao-change .yao-index{color:var(--accent)}
+.hexagram-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:8px;margin-top:10px}
+.hex-card{background:linear-gradient(180deg,#f3ecdd,#efe8d8);border-radius:5px;padding:12px;text-align:center;border:1px solid var(--border)}
+.hex-card .h-name{font-size:14px;color:var(--accent);letter-spacing:2px;font-family:"STKaiti","KaiTi",serif}
+.hex-card .h-sub{font-size:10px;color:var(--text-soft);margin-top:2px}.hex-card .h-icon{font-size:13px;margin-top:3px;letter-spacing:1px;color:var(--text)}
+.coin-btn{width:72px;height:72px;border-radius:50%;background:linear-gradient(135deg,var(--accent2),var(--accent));border:2px solid var(--gold);color:#fff;font-size:26px;cursor:pointer;transition:all .2s;box-shadow:0 3px 12px rgba(168,50,45,0.3)}
+.coin-btn:hover{transform:scale(1.05)}.coin-btn:active{transform:scale(0.95)}
+.coin-result{font-size:12px;color:var(--text);text-align:center;margin-top:4px}
+.yao-progress{display:flex;gap:6px;justify-content:center;margin-top:8px}
+.yao-dot{width:10px;height:10px;border-radius:50%;background:var(--border);transition:all .3s}.yao-dot.done{background:var(--accent)}
+
+/* ===== 二级 Tab（八字模式内分组） ===== */
+.sub-tabs{
+  display:flex;flex-wrap:wrap;gap:0;margin:6px 0 14px;
+  background:linear-gradient(180deg,var(--ink),#25201a);
+  border-radius:6px;border:1px solid var(--gold);overflow:hidden;
+  box-shadow:0 2px 8px rgba(0,0,0,0.15);
+}
+.sub-tabs .sub-tab{
+  flex:1;min-width:62px;text-align:center;padding:9px 6px;cursor:pointer;
+  font-size:11px;color:var(--gold-soft);transition:all .2s;
+  border-right:1px solid rgba(184,153,104,0.2);letter-spacing:2px;
+  font-family:"STKaiti","KaiTi","Songti SC",serif;font-weight:500;
+  user-select:none;
+}
+.sub-tabs .sub-tab:last-child{border-right:none}
+.sub-tabs .sub-tab:hover{color:var(--gold);background:rgba(184,153,104,0.1)}
+.sub-tabs .sub-tab.active{color:#fff;background:linear-gradient(180deg,var(--accent2),var(--accent));font-weight:600}
+.tab-panel{display:none}
+.tab-panel.active{display:block;animation:fadeIn .3s}
+@keyframes fadeIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
+
+/* ===== 响应式 ===== */
+@media(max-width:480px){
+  .container{padding:0 6px 40px}.card{padding:13px 12px;border-radius:5px}
+  .form-group{min-width:70px}
+  .form-group input,.form-group select{font-size:12px;padding:8px 8px;min-height:36px}
+  .btn{font-size:12px;padding:8px 16px;letter-spacing:2px}
+  .bazi-table{gap:2px;font-size:10px}.bazi-table .scell,.bazi-table .bcell{font-size:16px;padding:6px 2px}
+  .header h1{font-size:19px;letter-spacing:4px}
+  .nav a{font-size:10px;padding:6px 6px;letter-spacing:1px}
+  .dayun-item .dy-stem{font-size:12px}.dayun-item .dy-branch{font-size:10px}
+  .info-row{font-size:8px}.summary-grid{grid-template-columns:repeat(2,1fr);gap:4px}
+  .liunian-grid{grid-template-columns:repeat(4,1fr)}.wx-bar .wx-num{font-size:18px}
+  .ss-table th,.ss-table td{font-size:9px;padding:4px 2px}
+  .hp-grid{grid-template-columns:1fr!important}
+  .sub-tabs .sub-tab{min-width:48px;font-size:10px;padding:7px 3px;letter-spacing:1px}
+}
+@media(max-width:380px){
+  .nav-inner{flex-wrap:nowrap;overflow-x:auto;gap:1px}.nav a{padding:5px 4px;font-size:9px}
+  .form-row{flex-direction:column;gap:4px}.form-group{min-width:100%}
+  .dayun-item{min-width:48px}.liunian-grid{grid-template-columns:repeat(3,1fr)}
+}
+
+/* ===== 打印 ===== */
+@media print{
+  .nav,.coin-btn,#backTop,.btn,.footer,.card-arrow,.card-header,.sub-tabs{display:none!important}
+  .tab-panel{display:block!important}
+  .card{box-shadow:none;break-inside:avoid;page-break-inside:avoid;border:1px solid #ccc;padding:12px}
+  body{background:#fff}
+  .card-body{max-height:none!important}
+  .form-group select{background-image:none}.ts-info{background:none}
+}
+
+/* ===== 暗色模式（夜墨） ===== */
+@media(prefers-color-scheme:dark){
+  :root{
+    --bg:#0f0e0c;--card:#1c1814;--text:#e8ddc8;--text-soft:#b8a98e;
+    --accent:#d4604f;--accent2:#e87864;--gold:#d4b87a;--gold-soft:#a89368;
+    --border:#3a322a;--hover:#241e18;--ink:#0a0908;
+    --wood:#6b8c5a;--fire:#c8584d;--earth:#c09858;--metal:#d4b87a;--water:#5a7a8a;
+    --木:#6b8c5a;--火:#c8584d;--土:#c09858;--金:#d4b87a;--水:#5a7a8a;
+  }
+  body{background-image:none}
+  .nav{background:linear-gradient(180deg,var(--ink) 0%,#1a1410 100%)}
+  .header .bagua{filter:drop-shadow(0 0 10px rgba(212,96,79,0.3))}
+  .header h1{color:#f0e6d2}
+  .form-group input,.form-group select{background:#241e18;color:#e8ddc8}
+  .card:hover{box-shadow:0 4px 16px rgba(0,0,0,0.3)}
+  .bazi-table .scell,.bazi-table .bcell{background:linear-gradient(180deg,#241e18,#1c1814)!important;color:#f0e6d2}
+  .dayun-item,.ln-item,.sha-tag,.hex-card,.ss-table th,.info-box,.sum-item,.wx-bar,.ys-box,.ts-info,.yao-line .yao-detail span{background:linear-gradient(180deg,#241e18,#1c1814)!important}
+  .analysis-text p{color:#e8ddc8}
+  .btn{background:linear-gradient(135deg,var(--accent2),var(--accent));color:#fff}
+  .btn:hover{opacity:.92}
+  .gender-toggle button{background:#241e18}
+  .gender-toggle button.active{background:var(--accent)}
+  #reportContent{color:#e8ddc8!important;background:#1c1814!important}
+  .sub-tabs{background:linear-gradient(180deg,var(--ink),#1a1410)}
+  .dark-box{background:var(--ink)}
+}
