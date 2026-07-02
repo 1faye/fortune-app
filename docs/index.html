@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>八字排盘 · 六爻起卦 · 全面专业版</title>
+<meta name="description" content="免费在线八字排盘、六爻起卦、紫微斗数命盘分析。支持全国城市经纬度真太阳时校正，命局总览、用神喜忌、财运事业婚姻健康全方位详解。">
+<meta name="keywords" content="八字排盘,六爻起卦,紫微斗数,算命,命理,五行,用神,在线算命,免费算命,生辰八字">
+<meta property="og:title" content="八字排盘 · 六爻起卦 · 全面专业版">
+<meta property="og:description" content="免费在线八字排盘，六爻起卦，紫微斗数命盘分析，支持真太阳时校正">
+<meta property="og:type" content="website">
+<meta name="theme-color" content="#d4847a">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><text y='56' font-size='56'>☯</text></svg>">
+<link rel="manifest" href="manifest.json">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<link rel="preload" href="css/style.css" as="style">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div class="nav"><div class="nav-inner">
+<a href="javascript:void(0)" class="mode-tab active" onclick="switchMode('bazi', this)">🪷 八字排盘</a><span class="tab-divider"></span>
+<a href="javascript:void(0)" class="mode-tab" onclick="switchMode('qigua', this)">🪙 六爻起卦</a><span class="tab-divider"></span>
+<a href="javascript:void(0)" class="mode-tab" onclick="switchMode('ziwei', this)">🌟 紫微斗数</a><span class="tab-divider"></span>
+<a href="javascript:void(0)" class="mode-tab" onclick="switchMode('hepan', this)">💑 合盘分析</a>
+</div></div>
+<div class="container">
+<div class="header"><div class="bagua">☯</div><h1 id="mainTitle">八字排盘 · 全面专业版</h1><div class="subtitle" id="mainSub">全国城市经纬度 · 详细命理分析 · 时间起卦 · 手动摇卦</div></div>
+
+<!-- 八字模式 -->
+<div id="mode-bazi">
+<div class="card" id="input">
+<div class="card-header" onclick="toggleCard(this)"><div class="card-title">📋 出生信息</div><span class="card-arrow">▼</span></div>
+<div class="card-body"><div class="card-body-inner">
+<div class="form-row">
+<div class="form-group" style="max-width:100px;"><label>年份</label><select id="byear"></select></div>
+<div class="form-group" style="max-width:80px;"><label>月份</label><select id="bmonth"></select></div>
+<div class="form-group" style="max-width:80px;"><label>日期</label><select id="bday"></select></div>
+<div class="form-group" style="max-width:90px;"><label>时间</label><select id="bhour"></select></div>
+<div class="form-group" style="max-width:100px;"><label>性别</label><div class="gender-toggle" id="gt"><button class="active" data-g="male">男</button><button data-g="female">女</button></div></div>
+<div class="form-group" style="flex:2;min-width:200px;"><label>🏠 出生地</label><button class="btn" onclick="openBirthModal()" id="birthBtn" style="text-align:left;padding:10px 14px;background:#faf5f0;color:var(--text);border:1.5px solid var(--border);border-radius:10px;font-size:13px;">请选择出生地 ▾</button></div>
+<input type="hidden" id="bmin" value="0">
+<input type="hidden" id="lonVal" value="116.4">
+<div class="form-group form-end"><label>&nbsp;</label><button class="btn" onclick="calc()">开始排盘</button></div>
+</div></div></div></div>
+<div id="res" style="display:none;"><div class="card" id="summaryTop" style="background:linear-gradient(135deg,#fdf8f5,#fff5f3);border-color:var(--accent);border-radius:14px;margin-bottom:10px;padding:16px 18px;"><div id="summaryTopText" style="font-size:14px;line-height:1.8;color:var(--text);text-align:center;"></div></div><div class="card" id="bazi"><div class="card-header" onclick="toggleCard(this)"><div class="card-title">🏷 四柱八字</div><span class="card-arrow">▼</span></div><div class="card-body"><div class="card-body-inner pt0"><div class="bazi-table" id="baziTbl"></div><div class="info-row" id="nayinR"></div><div class="info-row" id="kwR"></div><div class="info-row" id="taiyuanR"></div><div class="ts-info" id="tsInfo"></div><div id="riZhuJie" style="margin-top:10px;padding:10px 12px;background:#fdf8f5;border-radius:10px;font-size:11px;line-height:1.7;color:var(--text);border:1px solid var(--border);"></div></div></div></div>
+<div class="card" id="overview"><div class="card-header" onclick="toggleCard(this)"><div class="card-title">🔮 命局总览 & 用神喜忌</div><span class="card-arrow">▼</span></div><div class="card-body"><div class="card-body-inner"><div class="summary-grid" id="sg"></div><div class="ys-box" id="ysBox"></div></div></div></div>
+<div class="card"><div class="card-header" onclick="toggleCard(this)"><div class="card-title">🌿 五行力量 & 十二长生</div><span class="card-arrow">▼</span></div><div class="card-body"><div class="card-body-inner"><div class="wx-bars" id="wxStat"></div><div style="margin-top:12px;" id="csTbl"></div><div id="wxExplain" class="analysis-text" style="margin-top:8px;"></div></div></div></div>
+<div class="card"><div class="card-header" onclick="toggleCard(this)"><div class="card-title">🌊 五行流通分析</div><span class="card-arrow">▼</span></div><div class="card-body"><div class="card-body-inner"><div id="wxFlow" class="analysis-text"></div></div></div></div>
+<div class="card"><div class="card-header" onclick="toggleCard(this)"><div class="card-title">⚡ 地支合冲刑害</div><span class="card-arrow">▼</span></div><div class="card-body"><div class="card-body-inner"><div class="tag-row" id="dzRel"></div></div></div></div>
+<div class="card"><div class="card-header" onclick="toggleCard(this)"><div class="card-title">🔗 十神全表 & 藏干</div><span class="card-arrow">▼</span></div><div class="card-body"><div class="card-body-inner"><table class="ss-table"><thead id="ssTh"></thead><tbody id="ssTb"></tbody></table><div style="margin-top:8px;" id="hidStem"></div><div id="ssJieDiv" class="analysis-text" style="margin-top:8px;"></div></div></div></div>
+<div class="card"><div class="card-header" onclick="toggleCard(this)"><div class="card-title">⭐ 神煞</div><span class="card-arrow">▼</span></div><div class="card-body"><div class="card-body-inner"><div class="tag-row" id="sshaR"></div><div id="sshaJie" class="analysis-text" style="margin-top:8px;"></div></div></div></div>
+<div class="card"><div class="card-header" onclick="toggleCard(this)"><div class="card-title">💰 财运详细分析</div><span class="card-arrow">▼</span></div><div class="card-body"><div class="card-body-inner"><div id="caiYun" class="analysis-text"></div></div></div></div>
+<div class="card"><div class="card-header" onclick="toggleCard(this)"><div class="card-title">❤️ 婚姻爱情详细分析</div><span class="card-arrow">▼</span></div><div class="card-body"><div class="card-body-inner"><div id="love" class="analysis-text"></div></div></div></div>
+<div class="card"><div class="card-header" onclick="toggleCard(this)"><div class="card-title">🌸 女性专属解读</div><span class="card-arrow">▼</span></div><div class="card-body"><div class="card-body-inner"><div id="women" class="analysis-text"></div></div></div></div>
+<div class="card"><div class="card-header" onclick="toggleCard(this)"><div class="card-title">🏥 健康详细分析</div><span class="card-arrow">▼</span></div><div class="card-body"><div class="card-body-inner"><div id="health" class="analysis-text"></div></div></div></div>
+<div class="card"><div class="card-header" onclick="toggleCard(this)"><div class="card-title">📖 事业详细分析</div><span class="card-arrow">▼</span></div><div class="card-body"><div class="card-body-inner"><div id="career" class="analysis-text"></div></div></div></div>
+<div class="card"><div class="card-header" onclick="toggleCard(this)"><div class="card-title">🧘 性格分析</div><span class="card-arrow">▼</span></div><div class="card-body"><div class="card-body-inner"><div id="personality" class="analysis-text"></div></div></div></div>
+<div class="card"><div class="card-header" onclick="toggleCard(this)"><div class="card-title">👨‍👩‍👧 六亲与子女</div><span class="card-arrow">▼</span></div><div class="card-body"><div class="card-body-inner"><div id="liuqin" class="analysis-text"></div></div></div></div>
+<div class="card"><div class="card-header" onclick="toggleCard(this)"><div class="card-title">🌟 贵人运与社交</div><span class="card-arrow">▼</span></div><div class="card-body"><div class="card-body-inner"><div id="guiren" class="analysis-text"></div></div></div></div>
+<div class="card"><div class="card-header" onclick="toggleCard(this)"><div class="card-title">📚 学业与考运</div><span class="card-arrow">▼</span></div><div class="card-body"><div class="card-body-inner"><div id="xueye" class="analysis-text"></div></div></div></div>
+<div class="card"><div class="card-header" onclick="toggleCard(this)"><div class="card-title">🏠 居住与风水建议</div><span class="card-arrow">▼</span></div><div class="card-body"><div class="card-body-inner"><div id="fengshui" class="analysis-text"></div></div></div></div>
+<div class="card"><div class="card-header" onclick="toggleCard(this)"><div class="card-title">💍 正缘配偶画像</div><span class="card-arrow">▼</span></div><div class="card-body"><div class="card-body-inner"><div id="peiou" class="analysis-text"></div></div></div></div>
+<div class="card"><div class="card-header" onclick="toggleCard(this)"><div class="card-title">🔑 一生关键年龄</div><span class="card-arrow">▼</span></div><div class="card-body"><div class="card-body-inner"><div id="keyage" class="analysis-text"></div></div></div></div>
+<div class="card"><div class="card-header" onclick="toggleCard(this)"><div class="card-title">✍️ 取名改名建议</div><span class="card-arrow">▼</span></div><div class="card-body"><div class="card-body-inner"><div id="naming" class="analysis-text"></div></div></div></div>
+<div class="card"><div class="card-header" onclick="toggleCard(this)"><div class="card-title">📊 命格综合评分</div><span class="card-arrow">▼</span></div><div class="card-body"><div class="card-body-inner"><div id="scorecard" class="analysis-text"></div></div></div></div>
+<div class="card"><div class="card-header" onclick="toggleCard(this)"><div class="card-title">📊 十神格局解析</div><span class="card-arrow">▼</span></div><div class="card-body"><div class="card-body-inner"><div id="shishenGeju" class="analysis-text"></div></div></div></div>
+<div class="card"><div class="card-header"><div class="card-title">🛡️ 本命守护与幸运物</div><span class="card-arrow">▼</span></div><div class="card-body"><div class="card-body-inner"><div id="guardian" class="analysis-text"></div></div></div></div>
+<div class="card"><div class="card-header"><div class="card-title">👵 晚年运势速览</div><span class="card-arrow">▼</span></div><div class="card-body"><div class="card-body-inner"><div id="wannian" class="analysis-text"></div></div></div></div>
+<div class="card"><div class="card-header"><div class="card-title">📅 本周运势参考</div><span class="card-arrow">▼</span></div><div class="card-body"><div class="card-body-inner"><div id="weekly" class="analysis-text"></div></div></div></div>
+<div class="card"><div class="card-header"><div class="card-title">🍀 幸运全表</div><span class="card-arrow">▼</span></div><div class="card-body"><div class="card-body-inner"><div id="lucktable" class="analysis-text"></div></div></div></div>
+<div class="card"><div class="card-header" onclick="toggleCard(this)"><div class="card-title">📍 出生时空分析</div><span class="card-arrow">▼</span></div><div class="card-body"><div class="card-body-inner"><div id="birthGeo" class="analysis-text"></div></div></div></div>
+<div class="card" id="dayun"><div class="card-header" onclick="toggleCard(this)"><div class="card-title">📈 大运详解</div><span class="card-arrow">▼</span></div><div class="card-body"><div class="card-body-inner"><div style="font-size:11px;color:#888;margin-bottom:8px;" id="dyInfo"></div><div class="dayun-row" id="dyRow"></div><div id="dyDetail" class="analysis-text" style="margin-top:10px;"></div></div></div></div>
+<!-- 流年流月流日选择区 -->
+<div class="card" id="liunian"><div class="card-header" onclick="toggleCard(this)"><div class="card-title">📅 流年分析（自由选择年份）</div><span class="card-arrow">▼</span></div><div class="card-body"><div class="card-body-inner">
+<div class="form-row" style="margin-bottom:12px;">
+<div class="form-group" style="max-width:130px;"><label>选择年份</label><select id="lnYearSel" onchange="renderLiunianDetail()"></select></div>
+<div class="form-group" class="form-end"><label>&nbsp;</label><button class="btn" onclick="renderLiunianDetail()">查看该年</button></div>
+</div>
+<div id="lnAnalysis" class="analysis-text" style="margin-top:8px;"></div>
+<div class="liunian-grid" id="lnGrid" style="margin-top:12px;"></div>
+<div style="margin-top:16px;"><span style="font-weight:700;color:var(--accent);">🔮 当前流年逐月运势：</span></div>
+<table class="ln-table-sm" id="liunianMonthTbl"></table>
+</div></div></div>
+
+<div class="card" id="liuyue"><div class="card-header" onclick="toggleCard(this)"><div class="card-title">📆 流月分析（自由选择年/月）</div><span class="card-arrow">▼</span></div><div class="card-body"><div class="card-body-inner">
+<div class="form-row" style="margin-bottom:8px;">
+<div class="form-group" style="max-width:110px;"><label>年份</label><select id="lyYearSel" onchange="renderLiuyueDetail()"></select></div>
+<div class="form-group" style="max-width:100px;"><label>月份</label><select id="lyMonthSel" onchange="renderLiuyueDetail()"></select></div>
+<div class="form-group" class="form-end"><label>&nbsp;</label><button class="btn" onclick="renderLiuyueDetail()">查看</button></div>
+</div>
+<div id="lyAnalysis" class="analysis-text" style="margin-top:8px;"></div>
+<div style="margin-top:12px;"><span style="font-size:10px;color:#888;">全年12月一览：</span></div>
+<table class="ln-table-sm" id="liuyueTbl"></table>
+</div></div></div>
+
+<div class="card" id="liuri"><div class="card-header" onclick="toggleCard(this)"><div class="card-title">📅 流日分析（自由选择日期 · 详细注解）</div><span class="card-arrow">▼</span></div><div class="card-body"><div class="card-body-inner">
+<div class="form-row" style="margin-bottom:8px;">
+<div class="form-group" style="max-width:100px;"><label>年份</label><select id="lrYearSel" onchange="updateLrDays()"></select></div>
+<div class="form-group" style="max-width:90px;"><label>月份</label><select id="lrMonthSel" onchange="updateLrDays()"></select></div>
+<div class="form-group" style="max-width:80px;"><label>日期</label><select id="lrDaySel" onchange="renderLiuriDetail()"></select></div>
+<div class="form-group" class="form-end"><label>&nbsp;</label><button class="btn" onclick="renderLiuriDetail()">查看</button></div>
+</div>
+<div id="lrAnalysis" class="analysis-text" style="margin-top:8px;"></div>
+<div style="margin-top:12px;"><span style="font-size:10px;color:#888;">前后15天一览（今日 ★）：</span></div>
+<table class="ln-table-sm" id="liuriTbl"></table>
+</div></div></div>
+<div id="baziAnalysisSummary" class="card"><div class="card-header" onclick="toggleCard(this)"><div class="card-title">📝 命理总结</div><span class="card-arrow">▼</span></div><div class="card-body"><div class="card-body-inner"><div id="finalSummary" class="analysis-text"></div></div></div></div>
+
+<!-- 贵人/小人 -->
+<div class="card"><div class="card-header" onclick="toggleCard(this)"><div class="card-title">🤝 贵人 & 小人提示</div><span class="card-arrow">▼</span></div><div class="card-body"><div class="card-body-inner"><div id="peopleAnalysis" class="analysis-text"></div></div></div></div>
+
+<!-- 流月行动历 -->
+<div class="card"><div class="card-header" onclick="toggleCard(this)"><div class="card-title">📆 未来6个月行动历</div><span class="card-arrow">▼</span></div><div class="card-body"><div class="card-body-inner"><div id="monthlyPlan" class="analysis-text"></div></div></div></div>
+
+<!-- 适合城市 -->
+<div class="card"><div class="card-header" onclick="toggleCard(this)"><div class="card-title">🏙️ 适合你的城市</div><span class="card-arrow">▼</span></div><div class="card-body"><div class="card-body-inner"><div id="cityAnalysis" class="analysis-text"></div></div></div></div>
+
+<!-- 每日行动指南 -->
+<div class="card"><div class="card-header" onclick="toggleCard(this)"><div class="card-title">📋 未来7天行动指南</div><span class="card-arrow">▼</span></div><div class="card-body"><div class="card-body-inner"><div id="dailyGuide" class="analysis-text"></div></div></div></div>
+
+<!-- AI个性化分析已移除 -->
+
+<!-- 完整命理报告 -->
+<div class="card" id="reportCard" style="display:none;">
+<div class="card-header" onclick="toggleCard(this)"><div class="card-title">📄 完整命理报告</div><span class="card-arrow">▼</span></div>
+<div class="card-body"><div class="card-body-inner">
+<div id="reportContent" style="font-size:12px;line-height:1.5;color:#333;background:#faf5f0;padding:16px;border-radius:8px;max-height:600px;overflow-y:auto;white-space:pre-wrap;font-family:'Courier New','PingFang SC',monospace;word-break:keep-all;"></div>
+<div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap;">
+<button class="btn" onclick="showReport()">🔄 重新生成报告</button>
+<button class="btn" onclick="saveReport()">💾 保存为TXT</button>
+<button class="btn" onclick="copyReport()">📋 复制全文</button>
+<button class="btn" onclick="window.print()">🖨️ 打印/PDF</button>
+</div>
+</div></div></div>
+</div></div>
+
+<!-- 起卦模式 -->
+<div id="mode-qigua" style="display:none;">
+<div class="card"><div class="card-header"><div class="card-title">🪙 占卜</div><div class="nav" style="position:static;background:none;border:none;padding:0;margin:0;"><div class="nav-inner" style="background:none;border:none;gap:2px;"><a class="mode-tab active" onclick="switchDivination('liuyao')" id="dt-liuyao">六爻</a><a class="mode-tab" onclick="switchDivination('meihua')" id="dt-meihua">梅花</a><a class="mode-tab" onclick="switchDivination('liuren')" id="dt-liuren">小六壬</a><a class="mode-tab" onclick="switchDivination('chenggu')" id="dt-chenggu">称骨</a></div></div></div><div class="card-body"><div class="card-body-inner pt0">
+
+<!-- 六爻 -->
+<div id="qigua-liuyao">
+<div class="form-row">
+<div class="form-group"><label>起卦方式</label><select id="qgMethod" onchange="switchQiguaMethod()"><option value="time">时间起卦</option><option value="coin">手动摇卦</option></select></div>
+<div class="form-group" style="max-width:130px;"><label>占问事项</label><input type="text" id="qgQuestion" value="问运势"></div>
+<div id="timeQiguaInputs"><div class="form-group"><label>起卦日期</label><input type="date" id="qgDate"></div></div>
+<div class="form-group" class="form-end" style="min-width:80px" id="timeBtn"><label>&nbsp;</label><button class="btn" onclick="timeQigua()">时间起卦</button></div>
+<div class="form-group" class="form-end" style="min-width:80px;display:none" id="coinBtn"><label>&nbsp;</label><button class="btn" onclick="startCoinQigua()">开始摇卦</button></div></div>
+<div id="coinArea" style="display:none;text-align:center;margin-top:16px;">
+<p style="color:#888;font-size:13px;margin-bottom:8px;">手持三枚硬币，默念所问之事，点击摇卦（共6次，自下而上）</p>
+<div style="display:flex;align-items:center;justify-content:center;gap:16px;">
+<button class="coin-btn" onclick="tossCoin()" id="tossBtn">🪙</button>
+<div style="text-align:left;"><div class="coin-result" id="coinResult"></div><div class="yao-progress" id="yaoProgress"></div></div></div></div>
+<div id="qiguaResult" style="display:none;"><div class="hexagram-display" id="hexDisplay"></div><div class="hexagram-grid" id="hexCards"></div><div id="qiguaAnalysis" class="analysis-text" style="margin-top:12px;"></div></div>
+</div>
+
+<!-- 梅花易数 -->
+<div id="qigua-meihua" style="display:none;">
+<div class="form-row">
+<div class="form-group"><label>起卦方式</label><select id="mhMethod" onchange="document.getElementById('mhNumInput').style.display=this.value==='num'?'':'none'"><option value="date">日期起卦</option><option value="num">数字起卦</option></select></div>
+<div class="form-group" style="max-width:130px;"><label>占问事项</label><input type="text" id="mhQuestion" value="问运势"></div>
+<div id="mhNumInput" style="display:none;"><div class="form-group"><label>报三个数</label><input type="text" id="mhNums" placeholder="如 3 8 15" style="width:120px;"></div></div>
+<div class="form-group" class="form-end"><label>&nbsp;</label><button class="btn" onclick="meihuaGua()">起卦</button></div></div>
+<div id="mhResult" style="display:none;"></div>
+</div>
+
+<!-- 小六壬 -->
+<div id="qigua-liuren" style="display:none;">
+<div class="form-row">
+<div class="form-group" style="max-width:80px;"><label>月份(农历)</label><select id="lrMonth"></select></div>
+<div class="form-group" style="max-width:80px;"><label>日期(农历)</label><select id="lrDay"></select></div>
+<div class="form-group" style="max-width:80px;"><label>时辰</label><select id="lrHour"><option value="0">子23-01</option><option value="1">丑01-03</option><option value="2">寅03-05</option><option value="3">卯05-07</option><option value="4">辰07-09</option><option value="5">巳09-11</option><option value="6" selected>午11-13</option><option value="7">未13-15</option><option value="8">申15-17</option><option value="9">酉17-19</option><option value="10">戌19-21</option><option value="11">亥21-23</option></select></div>
+<div class="form-group" style="max-width:130px;"><label>占问事项</label><input type="text" id="lrQuestion" value="问运势"></div>
+<div class="form-group" class="form-end"><label>&nbsp;</label><button class="btn" onclick="liurenCalc()">推算</button></div></div>
+<div id="lrResult" style="display:none;"></div>
+</div>
+
+<!-- 称骨算命 -->
+<div id="qigua-chenggu" style="display:none;">
+<div class="form-row">
+<div class="form-group" style="max-width:80px;"><label>年份</label><select id="cgYear"></select></div>
+<div class="form-group" style="max-width:70px;"><label>月份(农历)</label><select id="cgMonth"></select></div>
+<div class="form-group" style="max-width:70px;"><label>日期(农历)</label><select id="cgDay"></select></div>
+<div class="form-group" style="max-width:80px;"><label>时辰</label><select id="cgHour"><option value="0">子23-01</option><option value="1">丑01-03</option><option value="2">寅03-05</option><option value="3">卯05-07</option><option value="4">辰07-09</option><option value="5">巳09-11</option><option value="6" selected>午11-13</option><option value="7">未13-15</option><option value="8">申15-17</option><option value="9">酉17-19</option><option value="10">戌19-21</option><option value="11">亥21-23</option></select></div>
+<div class="form-group" style="max-width:90px;"><label>性别</label><div class="gender-toggle" id="cgGt"><button class="active" data-g="male">男</button><button data-g="female">女</button></div></div>
+<div class="form-group" class="form-end"><label>&nbsp;</label><button class="btn" onclick="chengguCalc()">称骨</button></div></div>
+<div id="cgResult" style="display:none;"></div>
+</div>
+
+</div></div></div></div>
+
+<!-- 紫微斗数模式 -->
+<div id="mode-ziwei" style="display:none;">
+<div class="card"><div class="card-header"><div class="card-title">🌟 紫微斗数命盘</div></div><div class="card-body"><div class="card-body-inner pt0">
+<div class="form-row">
+<div class="form-group" style="max-width:90px;"><label>年份</label><select id="zwYear"></select></div>
+<div class="form-group" style="max-width:70px;"><label>月份</label><select id="zwMonth"></select></div>
+<div class="form-group" style="max-width:70px;"><label>日期</label><select id="zwDay"></select></div>
+<div class="form-group" style="max-width:80px;"><label>时间</label><select id="zwHour"><option value="0">子时 23-01</option><option value="1">丑时 01-03</option><option value="2">寅时 03-05</option><option value="3">卯时 05-07</option><option value="4">辰时 07-09</option><option value="5">巳时 09-11</option><option value="6" selected>午时 11-13</option><option value="7">未时 13-15</option><option value="8">申时 15-17</option><option value="9">酉时 17-19</option><option value="10">戌时 19-21</option><option value="11">亥时 21-23</option></select></div>
+<div class="form-group" style="max-width:70px;"><label>分钟</label><select id="zwMin"></select></div>
+<div class="form-group" style="max-width:90px;"><label>性别</label><div class="gender-toggle" id="zwGt"><button class="active" data-g="male">男</button><button data-g="female">女</button></div></div>
+<div class="form-group" class="form-end"><label>&nbsp;</label><button class="btn" onclick="calcZiwei()">排紫微盘</button></div>
+</div></div></div></div>
+<div id="zwResult" style="display:none;">
+<div class="card"><div class="card-header" onclick="toggleCard(this)"><div class="card-title">🌟 紫微十二宫</div><span class="card-arrow">▼</span></div><div class="card-body"><div class="card-body-inner pt0">
+<div id="zwGongGrid" style="display:grid;grid-template-columns:repeat(4,1fr);gap:2px;text-align:center;"></div>
+</div></div></div>
+<div class="card"><div class="card-header" onclick="toggleCard(this)"><div class="card-title">⭐ 主星分布</div><span class="card-arrow">▼</span></div><div class="card-body"><div class="card-body-inner pt0"><div id="zwStars" class="analysis-text"></div></div></div></div>
+<div class="card"><div class="card-header" onclick="toggleCard(this)"><div class="card-title">📝 紫微分析</div><span class="card-arrow">▼</span></div><div class="card-body"><div class="card-body-inner pt0"><div id="zwAnalysis" class="analysis-text"></div></div></div></div>
+</div>
+</div>
+
+<!-- 合盘分析模式 -->
+<div id="mode-hepan" style="display:none;">
+<div class="card"><div class="card-header"><div class="card-title">💑 八字合盘分析</div></div><div class="card-body"><div class="card-body-inner pt0">
+
+<!-- 甲方 -->
+<div class="info-box">
+<div style="font-size:12px;color:var(--accent);margin-bottom:6px;">⬆ 甲方信息</div>
+<div class="form-row">
+<div class="form-group" style="max-width:90px;"><label>年份</label><select id="hpAy"></select></div>
+<div class="form-group" style="max-width:60px;"><label>月</label><select id="hpAm"></select></div>
+<div class="form-group" style="max-width:60px;"><label>日</label><select id="hpAd"></select></div>
+<div class="form-group" style="max-width:70px;"><label>时</label><select id="hpAh"></select></div>
+<div class="form-group" style="max-width:80px;"><label>性别</label><div class="gender-toggle" id="hpAgt"><button class="active" data-g="male">男</button><button data-g="female">女</button></div></div>
+<div class="form-group" style="max-width:100px;"><label>省份</label><select id="hpApv" onchange="hpUpdateCities('A')"><option value="">不限</option></select></div>
+<div class="form-group" style="max-width:100px;"><label>城市</label><select id="hpAcy" onchange="hpUpdateDistricts('A')"><option value="">不限</option></select></div>
+<div class="form-group" style="max-width:100px;"><label>区县</label><select id="hpAds" onchange="document.getElementById('hpAlon').value=(this.value.split('|')[2]||'116.4')"><option value="">不限</option></select></div>
+<input type="hidden" id="hpAlon" value="116.4">
+</div></div>
+
+<!-- 乙方 -->
+<div class="info-box">
+<div style="font-size:12px;color:var(--accent);margin-bottom:6px;">⬇ 乙方信息</div>
+<div class="form-row">
+<div class="form-group" style="max-width:90px;"><label>年份</label><select id="hpBy"></select></div>
+<div class="form-group" style="max-width:60px;"><label>月</label><select id="hpBm"></select></div>
+<div class="form-group" style="max-width:60px;"><label>日</label><select id="hpBd"></select></div>
+<div class="form-group" style="max-width:70px;"><label>时</label><select id="hpBh"></select></div>
+<div class="form-group" style="max-width:80px;"><label>性别</label><div class="gender-toggle" id="hpBgt"><button data-g="male">男</button><button class="active" data-g="female">女</button></div></div>
+<div class="form-group" style="max-width:100px;"><label>省份</label><select id="hpBpv" onchange="hpUpdateCities('B')"><option value="">不限</option></select></div>
+<div class="form-group" style="max-width:100px;"><label>城市</label><select id="hpBcy" onchange="hpUpdateDistricts('B')"><option value="">不限</option></select></div>
+<div class="form-group" style="max-width:100px;"><label>区县</label><select id="hpBds" onchange="document.getElementById('hpBlon').value=(this.value.split('|')[2]||'116.4')"><option value="">不限</option></select></div>
+<input type="hidden" id="hpBlon" value="116.4">
+</div></div>
+
+<div style="text-align:center;"><button class="btn" onclick="calcHepan()">🔄 合盘分析</button></div>
+</div></div></div>
+
+<div id="hpResult" style="display:none;">
+<!-- 双方八字对照 - 对称设计 -->
+<div class="card"><div class="card-header" onclick="toggleCard(this)"><div class="card-title">💑 双方八字对照</div><span class="card-arrow">▼</span></div><div class="card-body"><div class="card-body-inner pt0">
+<div class="hp-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+<div class="dark-box">
+<div style="font-size:11px;color:var(--accent);margin-bottom:6px;letter-spacing:2px;text-align:center;">⬆ 甲方</div><div id="hpAPillars"></div></div>
+<div class="dark-box">
+<div style="font-size:11px;color:var(--accent);margin-bottom:6px;letter-spacing:2px;text-align:center;">⬇ 乙方</div><div id="hpBPillars"></div></div>
+</div></div></div></div>
+
+<div class="card"><div class="card-header" onclick="toggleCard(this)"><div class="card-title">🔗 合盘详细分析</div><span class="card-arrow">▼</span></div><div class="card-body"><div class="card-body-inner pt0"><div id="hpAnalysis" class="analysis-text"></div></div></div></div>
+
+<div class="card"><div class="card-header" onclick="toggleCard(this)"><div class="card-title">📊 合盘评分</div><span class="card-arrow">▼</span></div><div class="card-body"><div class="card-body-inner pt0"><div id="hpScore" class="analysis-text"></div></div></div></div>
+</div>
+</div>
+
+<!-- 出生地选择弹窗 -->
+<div id="birthModal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);z-index:200;">
+<div style="background:#fff;max-width:480px;margin:40px auto;border-radius:16px;max-height:80vh;overflow:hidden;display:flex;flex-direction:column;">
+<div style="padding:12px 16px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;"><span style="font-weight:600;">选择出生地</span><button onclick="closeBirthModal()" style="border:none;background:none;font-size:20px;cursor:pointer;color:var(--text);">&times;</button></div>
+<div style="padding:8px 12px;border-bottom:1px solid var(--border);"><input type="text" id="birthSearch" oninput="filterBirthTree(this.value)" placeholder="🔍 输入城市名搜索（如：北京、海淀、南京）" style="width:100%;padding:10px 12px;border:1.5px solid var(--border);border-radius:10px;font-size:13px;background:#faf5f0;outline:none;font-family:inherit;box-sizing:border-box;"></div>
+<div style="padding:8px 4px;overflow-y:auto;flex:1;" id="birthTree"></div>
+</div></div>
+<div class="footer">八字排盘 · 六爻起卦专业系统 · 仅供娱乐参考 · AI生成内容请甄别</div></div>
+
+<!-- 模块化脚本（替代 app.min.js 打包文件） -->
+<script src="js/data.js?v=5" defer></script>
+<script src="js/classics.js?v=5" defer></script>
+<script src="js/app.js?v=5" defer></script>
+<script src="js/analysis.js?v=5" defer></script>
+<script src="js/analysis_extra.js?v=5" defer></script>
+<script src="js/divination.js?v=5" defer></script>
+<script src="js/report.js?v=5" defer></script>
+
+<!-- 回到顶部 -->
+<button id="backTop" style="position:fixed;bottom:24px;right:24px;width:44px;height:44px;border-radius:50%;border:none;background:linear-gradient(135deg,var(--accent2),var(--accent));color:#fff;font-size:20px;cursor:pointer;box-shadow:0 4px 16px rgba(212,132,122,.4);z-index:999;display:none;transition:all .3s;align-items:center;justify-content:center;">↑</button>
+</body>
+</html>
