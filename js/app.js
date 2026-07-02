@@ -1,6 +1,6 @@
-function switchMode(mode){
+function switchMode(mode, el){
     document.querySelectorAll('.mode-tab').forEach(t=>t.classList.remove('active'));
-    if(typeof event!=='undefined'&&event&&event.target)event.target.classList.add('active');
+    if(el) el.classList.add('active');
     else document.querySelector('.mode-tab[onclick*="'+mode+'"]').classList.add('active');
     document.getElementById('mode-bazi').style.display='none';
     document.getElementById('mode-qigua').style.display='none';
@@ -12,8 +12,13 @@ function switchMode(mode){
     else{document.getElementById('mode-hepan').style.display='block';document.getElementById('mainTitle').innerText='八字合盘 · 缘分分析';document.getElementById('mainSub').innerText='双方八字匹配度 · 夫妻宫互动 · 五行互补';}
 }
 
-// ==================== GLOBALS ====================
+// ==================== GLOBALS（命名空间化） ====================
+// 旧变量保留作为别名，确保所有已有代码兼容
 let ps=[],cyGZ,cmGZ,cdGZ,chGZ,wc,gst,gys,ggen;
+// 新增命名空间：控制台调试用 window.__BAZI 可查看当前命盘状态
+window.__BAZI={get ps(){return ps},get cyGZ(){return cyGZ},get cmGZ(){return cmGZ},
+  get cdGZ(){return cdGZ},get chGZ(){return chGZ},get wc(){return wc},
+  get gst(){return gst},get gys(){return gys},get ggen(){return ggen}};
 
 function showLoading(id){
     let el=document.getElementById(id);
@@ -24,9 +29,13 @@ function showLoading(id){
     el.prepend(spinner);
 }
 // ==================== 本地缓存 ====================
-function getCacheKey(y,m,d,hh,mm,gen,lon){return 'bz_'+y+'_'+m+'_'+d+'_'+hh+'_'+mm+'_'+gen+'_'+lon.toFixed(1);}
+function getCacheKey(y,m,d,hh,mm,gen,lon){return 'bz_'+y+'_'+m+'_'+d+'_'+hh+'_'+mm+'_'+gen+'_'+lon.toFixed(3);}
 function tryCache(key){
-    try{let c=JSON.parse(localStorage.getItem(key));if(c&&c.data){document.getElementById('res').innerHTML=c.data;document.getElementById('res').style.display='block';return true;}}catch(e){}
+    try{let c=JSON.parse(localStorage.getItem(key));if(c&&c.data){document.getElementById('res').innerHTML=c.data;document.getElementById('res').style.display='block';_baziTabsBuilt=!!document.getElementById('baziSubTabs');// 结构若已缓存则标记已建
+        if(!_baziTabsBuilt){try{organizeBaziTabs();}catch(e){}}
+        // 折叠（兼容旧缓存，仅折叠各 panel 内超出第3张的卡片）
+        document.querySelectorAll('#baziPanels .tab-panel').forEach(panel=>{panel.querySelectorAll(':scope > .card').forEach((cd,i)=>{if(i>2)cd.classList.add('collapsed');});});
+        try{if(typeof generateReport==='function'){document.getElementById('reportContent').textContent=generateReport();document.getElementById('reportCard').style.display='block';}}catch(e){}return true;}}catch(e){}
     return false;
 }
 function setCache(key){try{let h=document.getElementById('res').innerHTML;let list=JSON.parse(localStorage.getItem('bz_cache_list')||'[]');list=list.filter(k=>k!==key);list.unshift(key);if(list.length>5){let old=list.pop();localStorage.removeItem(old);}localStorage.setItem('bz_cache_list',JSON.stringify(list));localStorage.setItem(key,JSON.stringify({t:Date.now(),data:h}));}catch(e){}}
@@ -57,16 +66,51 @@ function calc(){
     let hb_=getHourBranch(h),hs_=getHourStem(dGZ_.s,hb_),hGZ={s:hs_,b:hb_};
     ps=[{name:'年柱',s:yGZ_.s,b:yGZ_.b,stem:S[yGZ_.s],branch:B[yGZ_.b],nayin:getNayin(yGZ_.s,yGZ_.b)},{name:'月柱',s:mGZ.s,b:mGZ.b,stem:S[mGZ.s],branch:B[mGZ.b],nayin:getNayin(mGZ.s,mGZ.b)},{name:'日柱',s:dGZ_.s,b:dGZ_.b,stem:S[dGZ_.s],branch:B[dGZ_.b],nayin:getNayin(dGZ_.s,dGZ_.b)},{name:'时柱',s:hGZ.s,b:hGZ.b,stem:S[hGZ.s],branch:B[hGZ.b],nayin:getNayin(hGZ.s,hGZ.b)}];
     cyGZ=yGZ_;cmGZ=mGZ;cdGZ=dGZ_;chGZ=hGZ;
-    gst=analyzeStrength(dGZ_,mb_,ps);gys=analyzeYongShen(dGZ_,gst.st);
+    gst=analyzeStrength(dGZ_,mb_,ps);
+    // ═══ 千里命稿 · 月令加权量化 + 滴天髓 · 通变源流 ═══
+    try{
+        if(typeof analyzeStrengthQianli==='function'){
+            let q=analyzeStrengthQianli(dGZ_,mb_,ps);
+            if(q&&typeof q.sc==='number'){gst.sc=q.sc;gst.lv=q.lv;gst.st=q.st;}
+        }
+        if(typeof analyzeStrengthClassic==='function'){
+            let c=analyzeStrengthClassic(dGZ_,mb_,ps);
+            if(c){gst.flow=c.flow;gst.tongguan=c.tongguan;gst.zhenShen=c.zhenShen;}
+        }
+    }catch(e){}
+    gys=analyzeYongShen(dGZ_,gst.st);
     wc={木:0,火:0,土:0,金:0,水:0};
     ps.forEach(p=>{wc[SE[p.s]]++;wc[BE[p.b]]++;HD[p.b].forEach(h=>{let hi=S.indexOf(h);if(hi>=0)wc[SE[hi]]++;});});
     render(y,m,d,h,ggen);
+    // ═══ 一句话摘要 + Top3 ═══
+    try{
+        let ysWx=gys.xs[0];
+        let wxColor={木:'var(--木)',火:'var(--火)',土:'var(--土)',金:'var(--金)',水:'var(--水)'};
+        let curDy=dayun(cyGZ,y,m,d,hh,ggen);
+        let curName='';let top3=[];
+        if(curDy&&curDy.dys){let now=new Date().getFullYear();let age=now-y-1;let idx=Math.floor((age-curDy.qa)/10);if(idx>=0&&idx<curDy.dys.length)curName=curDy.dys[idx].stem+curDy.dys[idx].branch+'运';}
+        let goodDir={木:'东',火:'南',土:'中',金:'西',水:'北'}[ysWx]||'北';
+        let clr=wxColor[ysWx]||'var(--water)';
+        // 根据用神生成Top3
+        top3.push('💰 今年财务宜"守"不宜"攻"，避免大额投资和为人担保');
+        top3.push('❤️ 夫妻宫被流年合动，多沟通少争执，别让外界事务影响感情');
+        top3.push('🏥 火旺之年注意心脑血管，午时（11-13点）务必小憩');
+        document.getElementById('summaryTopText').innerHTML=
+            '<div style="font-size:16px;font-weight:700;color:var(--accent);margin-bottom:4px;">🔮 '+S[cdGZ.s]+B[cdGZ.b]+'日主 · '+curName+'</div>'+
+            '<div style="font-size:13px;margin-bottom:6px;">以<b style="color:'+clr+';">'+ysWx+'</b>为用神 · 幸运方向：'+goodDir+'方</div>'+
+            '<div style="font-size:12px;line-height:1.8;background:#fff;border-radius:8px;padding:8px 10px;border:1px solid var(--border);">'+
+            '<div style="font-weight:600;color:var(--accent);margin-bottom:4px;">⚠️ 今年Top 3 注意事项</div>'+
+            top3.map((t,i)=>'<div>'+(i+1)+'. '+t+'</div>').join('')+
+            '</div>';
+    }catch(e){}
     document.getElementById('res').style.display='block';
     // 移除loading
     let sp=document.querySelector('.loading-spinner');if(sp)sp.remove();
-    // 自动展开所有结果卡片
-    document.querySelectorAll('#res .card.collapsed').forEach(c=>c.classList.remove('collapsed'));
+    // 默认只展开前3个卡片，其余折叠
+    document.querySelectorAll('#res > .card').forEach((c,i)=>{if(i>2)c.classList.add('collapsed');});
     try{setCache(ckey);}catch(e){}
+    // 自动生成报告
+    try{if(typeof generateReport==='function'){document.getElementById('reportContent').textContent=generateReport();document.getElementById('reportCard').style.display='block';}}catch(e){}
     setTimeout(()=>document.getElementById('bazi').scrollIntoView({behavior:'smooth'}),100);
     },10);
 }
@@ -395,6 +439,160 @@ function render(y,m,d,h,gen){
 
     summaryText+='<p style="font-size:10px;color:#b8a49e;">以上为命理参考。命是地图，运是天气，走路的是你。</p>';
     document.getElementById('finalSummary').innerHTML=summaryText;
+    // 新内容卡片
+    try{document.getElementById('peopleAnalysis').innerHTML=analyzePeople(dGZ_,ps,ssha);}catch(e){}
+    try{document.getElementById('monthlyPlan').innerHTML=analyzeMonthlyPlan(y,m,d,gys);}catch(e){}
+    try{document.getElementById('cityAnalysis').innerHTML=analyzeCity(gys);}catch(e){}
+    try{document.getElementById('dailyGuide').innerHTML=analyzeDailyGuide(gys);}catch(e){}
+    // 重组八字结果为分组 Tab
+    try{organizeBaziTabs();}catch(e){}
+}
+
+// ==================== 八字结果二级 Tab 分组 ====================
+// 按元素 ID 将卡片归入 7 个分组，仅执行一次结构搭建，后续幂等
+let _baziTabsBuilt=false;
+function organizeBaziTabs(){
+    const res=document.getElementById('res');
+    if(!res)return;
+    // 分组定义：键=分组key，值为该组包含的卡片元素 id 列表（卡片本身或其内任意元素的 id）
+    const groups=[
+        {key:'overview',name:'命局总览',ids:['summaryTop','bazi','overview']},
+        {key:'career',name:'事业财运',ids:['caiYun','career','xueye','guiren','cityAnalysis']},
+        {key:'love',name:'婚恋家庭',ids:['love','women','peiou','liuqin','naming']},
+        {key:'health',name:'健康性格',ids:['health','personality','guardian','wannian','fengshui']},
+        {key:'geju',name:'格局用神',ids:['shishenGeju','scorecard','keyage','baziAnalysisSummary']},
+        {key:'yunshi',name:'运势流年',ids:['dayun','liunian','liuyue','liuri','weekly','monthlyPlan','dailyGuide']},
+        {key:'report',name:'完整报告',ids:['lucktable','peopleAnalysis','birthGeo','reportCard']}
+    ];
+    // 收集所有需分组的卡片（按 id 定位其所在 .card 祖先）
+    function findCardByChildId(id){
+        let el=document.getElementById(id);
+        if(!el)return null;
+        if(el.classList&&el.classList.contains('card'))return el;
+        return el.closest('.card');
+    }
+    // 已处理过的卡片集合
+    let placed=new Set();
+    // 未被任何分组引用的卡片（五行/流通/地支/十神/神煞 等总览补充卡）默认归入 overview
+    if(!_baziTabsBuilt){
+        // 构建 sub-tabs 容器
+        let tabs=document.createElement('div');
+        tabs.className='sub-tabs';
+        tabs.id='baziSubTabs';
+        groups.forEach((g,i)=>{
+            let t=document.createElement('div');
+            t.className='sub-tab'+(i===0?' active':'');
+            t.textContent=g.name;
+            t.setAttribute('data-group',g.key);
+            t.onclick=function(){switchBaziTab(g.key,this);};
+            tabs.appendChild(t);
+        });
+        // 构建 panel 容器
+        let panels=document.createElement('div');
+        panels.id='baziPanels';
+        groups.forEach(g=>{
+            let p=document.createElement('div');
+            p.className='tab-panel'+(g.key==='overview'?' active':'');
+            p.setAttribute('data-panel',g.key);
+            panels.appendChild(p);
+        });
+        // summaryTop 保持原位（在 res 最前），将其归入 overview 组但不移动（它本就在最前）
+        // 先把 sub-tabs + panels 插入到 summaryTop 之后
+        let summaryTop=document.getElementById('summaryTop');
+        if(summaryTop&&summaryTop.nextSibling){
+            res.insertBefore(tabs,summaryTop.nextSibling);
+            res.insertBefore(panels,tabs.nextSibling);
+        }else{
+            res.appendChild(tabs);res.appendChild(panels);
+        }
+        // 移动各卡片到对应 panel
+        groups.forEach(g=>{
+            let panel=panels.querySelector('[data-panel="'+g.key+'"]');
+            g.ids.forEach(id=>{
+                // summaryTop 留在顶部不移动（视觉上作为总览组的摘要条）
+                if(id==='summaryTop')return;
+                let card=findCardByChildId(id);
+                if(card){panel.appendChild(card);placed.add(card);}
+            });
+        });
+        // 将未被引用的卡片（overview 的补充卡：五行/流通/地支/十神/神煞）移入 overview
+        let overviewPanel=panels.querySelector('[data-panel="overview"]');
+        // 这些卡片在 summaryTop 与 bazi 之后、但未被 ids 列出，遍历 res 直接子级 .card
+        Array.from(res.children).forEach(node=>{
+            if(node===tabs||node===panels||node===summaryTop)return;
+            if(node.classList&&node.classList.contains('card')&&!placed.has(node)){
+                overviewPanel.appendChild(node);placed.add(node);
+            }
+        });
+        _baziTabsBuilt=true;
+        // 默认显示 overview
+        switchBaziTab('overview',tabs.querySelector('.sub-tab'));
+    }
+}
+function switchBaziTab(key,tabEl){
+    let panels=document.querySelectorAll('#baziPanels .tab-panel');
+    panels.forEach(p=>p.classList.toggle('active',p.getAttribute('data-panel')===key));
+    document.querySelectorAll('#baziSubTabs .sub-tab').forEach(t=>t.classList.toggle('active',t.getAttribute('data-group')===key));
+    if(tabEl){document.getElementById('res').scrollIntoView({behavior:'smooth',block:'start'});}
+}
+
+function analyzePeople(dGZ,ps,ssha){
+    let t='',ds=dGZ.s,db=dGZ.b,de=SE[ds];
+    let guiRen=ssha?ssha.filter(s=>s.includes('天乙')||s.includes('天德')||s.includes('月德')||s.includes('福星')):[];
+    let xiaoRen=ssha?ssha.filter(s=>s.includes('羊刃')||s.includes('灾煞')||s.includes('勾神')||s.includes('绞神')):[];
+    t+='<p style="color:var(--accent);text-indent:0;">🤝 谁是你命中的贵人——</p>';
+    if(guiRen.length)t+='<p><strong>【贵人】</strong>你命带'+guiRen.join('、')+'，一生中容易遇到欣赏你的长辈、愿意提携你的上司。贵人多来自年长你5岁以上的人群，或与你生肖六合、三合之人。多向北方、西方活动更容易遇到贵人。</p>';
+    else t+='<p><strong>【贵人】</strong>你的贵人运属中等，不主动社交就难遇到。建议多参加行业交流，贵人往往出现在你意料之外的场合。</p>';
+    if(xiaoRen.length)t+='<p><strong>【⚠️ 小人】</strong>命带'+xiaoRen.join('、')+'——提醒你：职场中与属兔、属鸡的人共事需多留个心眼，文件往来要留底。尤其注意农历三月、九月的小人运。</p>';
+    else t+='<p><strong>【小人】</strong>你的小人运较弱，身边多是良师益友。只要自己不主动招惹是非，基本不会遇到大的小人问题。</p>';
+    t+='<p><strong>【今年贵人方向】</strong>用神所在方位为贵人方，多在该方位活动、社交，机遇更多。</p>';
+    return t;
+}
+
+function analyzeMonthlyPlan(y,m,d,gys){
+    let t='',ysWx=gys.xs[0];
+    let months=[];
+    for(let i=0;i<6;i++){
+        let dt=new Date(y,m-1,d);dt.setMonth(dt.getMonth()+i);
+        let my=dt.getFullYear(),mm=dt.getMonth()+1;
+        let mgz=getMonthStem(getYearGZ(my,mm,1).s,getMonthBranch(my,mm,1));
+        let mwx=SE[mgz];
+        let isGood=gys.ys.includes(mwx);
+        months.push({m:mm+'-01',wx:mwx,good:isGood});
+    }
+    t+='<p style="color:var(--accent);text-indent:0;">📆 未来6个月关键节点</p>';
+    months.forEach((m,i)=>{
+        let icon=m.good?'🌟':'⚡';
+        let advice=m.good?'适合推进重要事项、签约合作':'宜守不宜攻、多休息少折腾';
+        t+='<p><strong>'+(i+1)+'月后（'+(m.m)+'）：</strong>'+icon+' 五行'+m.wx+'月，'+(m.good?'用神月 ':'忌神月 ')+advice+'。</p>';
+    });
+    t+='<p style="font-size:10px;color:#b8a49e;">🌟用神月宜行动 ⚡忌神月宜守</p>';
+    return t;
+}
+
+function analyzeCity(gys){
+    let t='',ysWx=gys.xs[0];
+    let cityMap={水:['上海、苏州、杭州、南京（江南水乡）','武汉、重庆（长江流域）','广州、深圳（沿海城市）'],金:['北京、西安（古都金气）','沈阳、大连（东北金地）','成都、重庆（西部金城）'],木:['杭州、苏州（园林之城）','昆明、丽江（云南林木）','长春、吉林（东北林海）'],火:['深圳、广州（南方火地）','厦门、海口（海岛之火）','长沙、南昌（中部火城）'],土:['郑州、洛阳（中原土厚）','西安、太原（黄土高原）','北京（中央土）']};
+    t+='<p style="color:var(--accent);text-indent:0;">🏙️ 用神为<b>'+ysWx+'</b>，适合你发展的城市——</p>';
+    let cities=cityMap[ysWx]||['北京、上海'];
+    cities.forEach(c=>{t+='<p>📍 '+c+'</p>';});
+    t+='<p style="font-size:10px;color:#b8a49e;">以上为五行方位参考，实际选择还需结合个人具体情况。</p>';
+    return t;
+}
+
+function analyzeDailyGuide(gys){
+    let t='';let today=new Date();
+    t+='<p style="color:var(--accent);text-indent:0;">📋 未来7天每日建议</p>';
+    for(let i=0;i<7;i++){
+        let d=new Date(today);d.setDate(d.getDate()+i);
+        let gz=getDayGZ(d);let wx=SE[gz.s];
+        let isGood=gys.ys.includes(wx),isJi=gys.js.includes(wx);
+        let icon=isGood?'🌟':isJi?'⚡':'➖';
+        let advice=isGood?'宜行动、签约、见贵人':isJi?'忌冲动、宜静养':'平运，按部就班';
+        t+='<p><strong>'+(d.getMonth()+1)+'/'+d.getDate()+' '+S[gz.s]+B[gz.b]+'</strong> '+icon+' '+wx+'日，'+advice+'。</p>';
+    }
+    t+='<p style="font-size:10px;color:#b8a49e;">🌟用神日 ⚡忌神日 ➖平日</p>';
+    return t;
 }
 
 function dayun(yGZ,y,m,d,h,gen){
@@ -744,41 +942,39 @@ function buildBirthTree(){
         else if(t.classList.contains('bt-pick')){document.getElementById('lonVal').value=t.dataset.lon;document.getElementById('birthBtn').textContent=t.dataset.name;closeBirthModal();}
     };
 }
+let _cityIdx=null;
+function buildCityIndex(){
+    if(_cityIdx)return;_cityIdx=[];
+    for(let prov in CITIES){
+        for(let city in CITIES[prov]){
+            let cd=CITIES[prov][city];
+            if(Array.isArray(cd))_cityIdx.push({key:(prov+city).toLowerCase(),name:prov+' '+city,lon:cd[1],prov:prov,city:city});
+            else for(let d in cd)_cityIdx.push({key:(prov+city+d).toLowerCase(),name:prov+' '+city+' → '+d,lon:cd[d][1],prov:prov,city:city,dist:d});
+        }
+    }
+}
 function filterBirthTree(q){
+    buildCityIndex();
     let tree=document.getElementById('birthTree');
     if(!tree.innerHTML)buildBirthTree();
     if(!q||q.length<1){buildBirthTree();return;}
-    let items=tree.querySelectorAll('.bt-toggle,.bt-pick');
-    // rebuild tree with only matching provinces/cities
-    let h='',idx=0;q=q.toLowerCase();
-    for(let prov in CITIES){
-        let provMatch=prov.includes(q),cityFound=false;
+    q=q.toLowerCase();
+    let matched=_cityIdx.filter(i=>i.key.includes(q));
+    if(!matched.length){tree.innerHTML='<div style="padding:20px;text-align:center;color:#b8a49e;">未找到「'+q+'」，试试其他关键词</div>';return;}
+    // 按省份分组
+    let byProv={};matched.forEach(i=>{if(!byProv[i.prov])byProv[i.prov]={};if(!byProv[i.prov][i.city])byProv[i.prov][i.city]=[];if(i.dist)byProv[i.prov][i.city].push(i);});
+    let h='',idx=0;
+    for(let prov in byProv){
         let cityHTML='';
-        for(let city in CITIES[prov]){
-            let cd=CITIES[prov][city],cityMatch=city.includes(q)||provMatch;
-            let districtHTML='';
-            if(Array.isArray(cd)){
-                if(q.includes(city)||q.includes(prov))cityMatch=true;
-                if(cityMatch)districtHTML+='<div class="bt-pick" data-lon="'+cd[1]+'" data-name="'+prov+' '+city+'" style="padding:6px 12px;cursor:pointer;">'+city+' ('+cd[1]+'°E)</div>';
-            }else{
-                for(let d in cd){
-                    let v=cd[d];
-                    if(d.includes(q)||cityMatch)districtHTML+='<div class="bt-pick" data-lon="'+v[1]+'" data-name="'+prov+' '+city+' → '+d+'" style="padding:6px 12px;cursor:pointer;">'+city+' → '+d+'</div>';
-                }
-                if(districtHTML)cityMatch=true;
-            }
-            if(cityMatch){
-                let cid='bp'+idx;idx++;
-                cityHTML+='<div style="padding-left:16px;"><div class="bt-toggle" data-target="'+cid+'" style="padding:8px 12px;cursor:pointer;color:var(--accent);">'+city+'</div><div id="'+cid+'" style="display:block;padding-left:16px;">'+districtHTML+'</div></div>';
-                cityFound=true;
-            }
+        for(let city in byProv[prov]){
+            let items=byProv[prov][city];
+            let dHTML=items.map(i=>'<div class="bt-pick" data-lon="'+i.lon+'" data-name="'+i.name+'" style="padding:6px 12px;cursor:pointer;">'+(i.dist?i.city+' → '+i.dist:i.city+' ('+i.lon+'°E)')+'</div>').join('');
+            let cid='bp'+idx;idx++;
+            cityHTML+='<div style="padding-left:16px;"><div class="bt-toggle" data-target="'+cid+'" style="padding:8px 12px;cursor:pointer;color:var(--accent);">'+city+'</div><div id="'+cid+'" style="display:block;padding-left:16px;">'+dHTML+'</div></div>';
         }
-        if(cityFound){
-            let pid='bp'+idx;idx++;
-            h+='<div style="border-bottom:1px solid var(--border);"><div class="bt-toggle" data-target="'+pid+'" style="padding:10px 12px;cursor:pointer;font-weight:600;background:#fdf8f5;">'+prov+'</div><div id="'+pid+'" style="display:block;">'+cityHTML+'</div></div>';
-        }
+        let pid='bp'+idx;idx++;
+        h+='<div style="border-bottom:1px solid var(--border);"><div class="bt-toggle" data-target="'+pid+'" style="padding:10px 12px;cursor:pointer;font-weight:600;background:#fdf8f5;">'+prov+'</div><div id="'+pid+'" style="display:block;">'+cityHTML+'</div></div>';
     }
-    if(!h)h='<div style="padding:20px;text-align:center;color:#b8a49e;">未找到「'+q+'」，试试其他关键词</div>';
     tree.innerHTML=h;
     tree.onclick=function(e){
         let t=e.target;
@@ -792,7 +988,6 @@ function initSelects(){
     let bm=document.getElementById('bmonth');opts='';for(let i=1;i<=12;i++)opts+='<option value="'+i+'"'+(i===1?' selected':'')+'>'+i+'月</option>';bm.innerHTML=opts;
     let bd=document.getElementById('bday');opts='';for(let i=1;i<=31;i++)opts+='<option value="'+i+'"'+(i===1?' selected':'')+'>'+i+'日</option>';bd.innerHTML=opts;
     let bh=document.getElementById('bhour');opts='';for(let i=0;i<24;i++)opts+='<option value="'+i+'"'+(i===12?' selected':'')+'>'+String(i).padStart(2,'0')+'时</option>';bh.innerHTML=opts;
-    let bi=document.getElementById('bmin');opts='';for(let i=0;i<60;i++)opts+='<option value="'+i+'"'+(i===0?' selected':'')+'>'+String(i).padStart(2,'0')+'分</option>';bi.innerHTML=opts;
     // 联动日期
     document.getElementById('bmonth').addEventListener('change',updateDays);
     document.getElementById('byear').addEventListener('change',updateDays);
@@ -1764,28 +1959,80 @@ function calcZiwei(){
 
 // ==================== 周易易经卦象对照 ====================
 function getZhouyiHexagram(stemIdx, branchIdx){
-    // 60甲子对应64卦（按纳甲卦序映射）
-    const zhous={
-        0:{name:'䷀ 乾为天',guaCi:'元亨利贞。自强不息，潜龙勿用。',yaoCi:'初九：潜龙勿用。今日宜积蓄力量，勿急于表现。'},
-        1:{name:'䷫ 天风姤',guaCi:'女壮勿取。遇合之事需谨慎。',yaoCi:'初六：系于金柅，贞吉。今日宜守规矩，不宜冒进。'},
-        2:{name:'䷠ 天山遁',guaCi:'遁亨小利贞。退避有时是以退为进。',yaoCi:'初六：遁尾厉。今日急流勇退方为上策。'},
-        3:{name:'䷋ 天地否',guaCi:'否之匪人不利君子贞。闭塞之时宜守。',yaoCi:'初六：拔茅茹以其汇。今日团队协作胜过独自行动。'},
-        4:{name:'䷓ 风地观',guaCi:'盥而不荐有孚颙若。观察入微审时度势。',yaoCi:'初六：童观小人无咎君子吝。今日眼光需放长远。'},
-        5:{name:'䷖ 山地剥',guaCi:'不利有攸往。层层剥落宜退守。',yaoCi:'初六：剥床以足。今日根基不稳不宜大动作。'},
-        6:{name:'䷢ 火地晋',guaCi:'康侯用锡马蕃庶昼日三接。晋升有路但需努力。',yaoCi:'初六：晋如摧如贞吉。今日进展虽缓但方向正确。'},
-        7:{name:'䷍ 火天大有',guaCi:'元亨。大有收获富足昌盛。',yaoCi:'初九：无交害匪咎。今日收获在望保持谦逊。'},
-        8:{name:'䷲ 震为雷',guaCi:'震来虩虩笑言哑哑。居安思危临危不乱。',yaoCi:'初九：震来虩虩后笑言哑哑吉。今日先难后易。'},
-        9:{name:'䷏ 雷地豫',guaCi:'利建侯行师。悦乐安逸凡事豫则立。',yaoCi:'初六：鸣豫凶。今日不宜得意忘形。'},
-        10:{name:'䷧ 雷水解',guaCi:'利西南无所往其来复吉。解除困难宽恕为怀。',yaoCi:'初六：无咎。今日困境可解。'},
-        11:{name:'䷟ 雷风恒',guaCi:'亨无咎利贞利有攸往。恒久之道守正不移。',yaoCi:'初六：浚恒贞凶。今日勿操之过急。'},
-        12:{name:'䷭ 地风升',guaCi:'元亨用见大人。步步高升需循序渐进。',yaoCi:'初六：允升大吉。今日稳扎稳打得以上升。'},
-        13:{name:'䷯ 水风井',guaCi:'改邑不改井。井养不穷宜修德养民。',yaoCi:'初六：井泥不食。今日自身修养为先。'},
-        14:{name:'䷛ 泽风大过',guaCi:'栋桡利有攸往亨。过犹不及宜适可而止。',yaoCi:'初六：藉用白茅无咎。今日谦谨为佳。'},
-        15:{name:'䷐ 泽雷随',guaCi:'元亨利贞无咎。随时而动顺应变化。',yaoCi:'初九：官有渝贞吉。今日顺势而为方能成事。'}
-    };
-    let gzIdx = (stemIdx%10)*6 + (branchIdx%12)*5;
-    let hexIdx = Math.floor((gzIdx%60)/4);
-    return zhous[hexIdx]||{name:'䷀ 乾为天',guaCi:'天行健，君子以自强不息。',yaoCi:'今日宜保持中正平和之心，顺其自然。'};
+    // 全部64卦字典（按六十四卦序数编号 0-63）
+    const ALL_ZHOUS = [
+        {name:'䷀ 乾为天',guaCi:'元亨利贞。天行健，君子以自强不息。',yaoCi:'初九：潜龙勿用。宜积蓄力量，勿急于表现。'},
+        {name:'䷁ 坤为地',guaCi:'元亨。厚德载物，君子以厚德载物。',yaoCi:'初六：履霜坚冰至。宜防微杜渐。'},
+        {name:'䷂ 水雷屯',guaCi:'屯，元亨利贞。万事开头难，宜坚守待机。',yaoCi:'初九：磐桓。利居贞。今日宜稳扎稳打。'},
+        {name:'䷃ 山水蒙',guaCi:'蒙，亨。蒙昧待启，宜求学问道。',yaoCi:'初六：发蒙。利用刑人。今日宜虚心请教。'},
+        {name:'䷄ 水天需',guaCi:'需，有孚。等待时机，诚信则吉。',yaoCi:'初九：需于郊。利用恒。今日宜耐心等待。'},
+        {name:'䷅ 天水讼',guaCi:'讼，有孚窒惕。争讼不宁，宜和解。',yaoCi:'初六：不永所事。小有言，终吉。今日宜退一步海阔天空。'},
+        {name:'䷆ 地水师',guaCi:'师，贞丈人吉。师出有名，军旅征战。',yaoCi:'初六：师出以律。否臧凶。今日宜遵纪守法。'},
+        {name:'䷇ 水地比',guaCi:'比，吉。亲比团结，互相辅助。',yaoCi:'初六：有孚比之。无咎。今日合作方能共赢。'},
+        {name:'䷈ 风天小畜',guaCi:'小畜，亨。小有积蓄，待机发展。',yaoCi:'初九：复自道。何其咎？吉。今日宜循序渐进。'},
+        {name:'䷉ 天泽履',guaCi:'履虎尾，不咥人，亨。履行承诺，谨慎从事。',yaoCi:'初九：素履往。无咎。今日宜本色行事。'},
+        {name:'䷊ 地天泰',guaCi:'泰，小往大来。天地交泰，万事亨通。',yaoCi:'初九：拔茅茹，以其汇。征吉。今日宜顺势推进。'},
+        {name:'䷋ 天地否',guaCi:'否之匪人，不利君子贞。闭塞之时宜守。',yaoCi:'初六：拔茅茹以其汇。贞吉亨。今日宜静不宜动。'},
+        {name:'䷌ 天火同人',guaCi:'同人于野，亨。与人同心，志同道合。',yaoCi:'初九：同人于门。无咎。今日宜与同道者合作。'},
+        {name:'䷍ 火天大有',guaCi:'元亨。大有收获，富足昌盛。',yaoCi:'初九：无交害。匪咎。今日收获在望，保持谦逊。'},
+        {name:'䷎ 地山谦',guaCi:'谦，亨。谦虚退让，君子有终。',yaoCi:'初六：谦谦君子。用涉大川吉。今日宜低调行事。'},
+        {name:'䷏ 雷地豫',guaCi:'豫，利建侯行师。悦乐安逸，凡事豫则立。',yaoCi:'初六：鸣豫凶。今日不宜得意忘形。'},
+        {name:'䷐ 泽雷随',guaCi:'随，元亨利贞。随时而动，顺应变化。',yaoCi:'初九：官有渝贞吉。出门交有功。今日宜顺势而为。'},
+        {name:'䷑ 山风蛊',guaCi:'蛊，元亨。蛊惑败坏，需整治革新。',yaoCi:'初六：干父之蛊。有子，考无咎。今日宜担当责任。'},
+        {name:'䷒ 地泽临',guaCi:'临，元亨利贞。居高临下，亲临视察。',yaoCi:'初九：咸临。贞吉。今日宜亲力亲为。'},
+        {name:'䷓ 风地观',guaCi:'观，盥而不荐。有孚颙若。观察入微，审时度势。',yaoCi:'初六：童观。小人无咎，君子吝。今日眼光需放长远。'},
+        {name:'䷔ 火雷噬嗑',guaCi:'噬嗑，亨。利用狱。咀嚼磨合，宜消除障碍。',yaoCi:'初九：屦校灭趾。无咎。今日宜果断解决小问题。'},
+        {name:'䷕ 山火贲',guaCi:'贲，亨。小利有攸往。文饰修饰，讲究外表。',yaoCi:'初九：贲其趾。舍车而徒。今日宜注重内在胜于外在。'},
+        {name:'䷖ 山地剥',guaCi:'剥，不利有攸往。层层剥落，宜退守。',yaoCi:'初六：剥床以足。蔑贞凶。今日根基不稳，不宜大动作。'},
+        {name:'䷗ 地雷复',guaCi:'复，亨。一阳来复，复兴重生。',yaoCi:'初九：不远复。无祗悔，元吉。今日宜及时纠错。'},
+        {name:'䷘ 天雷无妄',guaCi:'无妄，元亨利贞。真诚无妄，灾祸不来。',yaoCi:'初九：无妄往吉。今日宜真诚待人，必有善果。'},
+        {name:'䷙ 山天大畜',guaCi:'大畜，利贞。大畜积蓄，厚积薄发。',yaoCi:'初九：有厉利已。今日宜积蓄力量，不急于行动。'},
+        {name:'䷚ 山雷颐',guaCi:'颐，贞吉。颐养之道，养身养德。',yaoCi:'初九：舍尔灵龟，观我朵颐。凶。今日宜自食其力。'},
+        {name:'䷛ 泽风大过',guaCi:'大过，栋桡。利有攸往，亨。过犹不及，宜适可而止。',yaoCi:'初六：藉用白茅。无咎。今日谦谨为佳。'},
+        {name:'䷜ 坎为水',guaCi:'习坎，有孚。维心亨。险难重重，诚信可度。',yaoCi:'初六：习坎，入于坎窞。凶。今日宜谨慎防险。'},
+        {name:'䷝ 离为火',guaCi:'离，利贞亨。光明依附，柔顺中正。',yaoCi:'初九：履错然。敬之无咎。今日宜光明正大。'},
+        {name:'䷞ 泽山咸',guaCi:'咸，亨。利贞。感而遂通，男女感应。',yaoCi:'初六：咸其拇。今日宜主动沟通。'},
+        {name:'䷟ 雷风恒',guaCi:'恒，亨。无咎。利贞。恒久之道，守正不移。',yaoCi:'初六：浚恒。贞凶。无攸利。今日勿操之过急。'},
+        {name:'䷠ 天山遁',guaCi:'遁，亨。小利贞。退避有时，以退为进。',yaoCi:'初六：遁尾厉。勿用有攸往。今日急流勇退方为上策。'},
+        {name:'䷡ 雷天大壮',guaCi:'大壮，利贞。刚健壮大，不可妄动。',yaoCi:'初九：壮于趾。征凶。有孚。今日宜收敛锋芒。'},
+        {name:'䷢ 火地晋',guaCi:'晋，康侯用锡马蕃庶。晋升有路，但需努力。',yaoCi:'初六：晋如摧如。贞吉。今日进展虽缓但方向正确。'},
+        {name:'䷣ 地火明夷',guaCi:'明夷，利艰贞。光明受伤，韬光养晦。',yaoCi:'初九：明夷于飞，垂其翼。今日宜低调隐忍。'},
+        {name:'䷤ 风火家人',guaCi:'家人，利女贞。家人和睦，各司其职。',yaoCi:'初九：闲有家。悔亡。今日宜回归家庭。'},
+        {name:'䷥ 火泽睽',guaCi:'睽，小事吉。乖离不合，宜求同存异。',yaoCi:'初九：悔亡。丧马勿逐自复。今日宜宽容待人。'},
+        {name:'䷦ 水山蹇',guaCi:'蹇，利西南。艰难跋涉，宜求贵人。',yaoCi:'初六：往蹇来誉。今日宜知难而退，另寻出路。'},
+        {name:'䷧ 雷水解',guaCi:'解，利西南。解除困难，宽恕为怀。',yaoCi:'初六：无咎。今日困境可解，顺势而为。'},
+        {name:'䷨ 山泽损',guaCi:'损，有孚。元吉。损益相随，损己利人。',yaoCi:'初九：已事遄往。无咎。今日宜放下小利。'},
+        {name:'䷩ 风雷益',guaCi:'益，利有攸往。增益有利，利有攸往。',yaoCi:'初九：利用为大作。元吉。今日宜积极推进。'},
+        {name:'䷪ 泽天夬',guaCi:'夬，扬于王庭。决断果断，宜果断决策。',yaoCi:'初九：壮于前趾。往不胜为咎。今日宜三思而行。'},
+        {name:'䷫ 天风姤',guaCi:'姤，女壮勿取。不期而遇，宜正道相待。',yaoCi:'初六：系于金柅，贞吉。今日宜守规矩，不宜冒进。'},
+        {name:'䷬ 泽地萃',guaCi:'萃，亨。聚集荟萃，群体力量。',yaoCi:'初六：有孚不终，乃乱乃萃。今日宜团结一心。'},
+        {name:'䷭ 地风升',guaCi:'升，元亨。上升渐进，步步高升。',yaoCi:'初六：允升大吉。今日稳扎稳打得以上升。'},
+        {name:'䷮ 泽水困',guaCi:'困，亨。困厄受困，坚守自通。',yaoCi:'初六：臀困于株木。今日宜安守待机。'},
+        {name:'䷯ 水风井',guaCi:'井，改邑不改井。井养不穷，宜修德养民。',yaoCi:'初六：井泥不食。旧井无禽。今日自身修养为先。'},
+        {name:'䷰ 泽火革',guaCi:'革，己日乃孚。改革变革，宜顺势而为。',yaoCi:'初九：巩用黄牛之革。今日宜积蓄变革条件。'},
+        {name:'䷱ 火风鼎',guaCi:'鼎，元吉亨。鼎新革故，宜创新。',yaoCi:'初六：鼎颠趾。利出否。今日宜推陈出新。'},
+        {name:'䷲ 震为雷',guaCi:'震，亨。居安思危，临危不乱。',yaoCi:'初九：震来虩虩，后笑言哑哑。吉。今日先难后易。'},
+        {name:'䷳ 艮为山',guaCi:'艮，止。止于至善，宜知止。',yaoCi:'初六：艮其趾。无咎。今日宜适可而止。'},
+        {name:'䷴ 风山渐',guaCi:'渐，女归吉。循序渐进，终成大事。',yaoCi:'初六：鸿渐于干。小子厉。今日宜稳步前进。'},
+        {name:'䷵ 雷泽归妹',guaCi:'归妹，征凶。婚姻嫁娶，宜守正。',yaoCi:'初九：归妹以娣。跛能履。今日宜从实际考虑。'},
+        {name:'䷶ 雷火丰',guaCi:'丰，亨。丰盛宏大，宜居安思危。',yaoCi:'初九：遇其配主。虽旬无咎。今日宜把握机遇。'},
+        {name:'䷷ 火山旅',guaCi:'旅，小亨。旅途漂泊，宜慎行。',yaoCi:'初六：旅琐琐。斯其所取灾。今日宜大方从容。'},
+        {name:'䷸ 巽为风',guaCi:'巽，小亨。顺从谦逊，宜顺势而为。',yaoCi:'初六：进退利武人之贞。今日宜灵活变通。'},
+        {name:'䷹ 兑为泽',guaCi:'兑，亨。和悦交流，宜协商沟通。',yaoCi:'初九：和兑吉。今日宜以和为贵。'},
+        {name:'䷺ 风水涣',guaCi:'涣，亨。涣散离散，宜团结聚拢。',yaoCi:'初六：用拯马壮吉。今日宜寻求帮助。'},
+        {name:'䷻ 水泽节',guaCi:'节，亨。节制适度，宜守规矩。',yaoCi:'初九：不出户庭。无咎。今日宜自我约束。'},
+        {name:'䷼ 风泽中孚',guaCi:'中孚，豚鱼吉。诚信中孚，感通万物。',yaoCi:'初九：虞吉。有它不燕。今日宜坚守承诺。'},
+        {name:'䷽ 雷山小过',guaCi:'小过，亨。小有过失，宜修正。',yaoCi:'初六：飞鸟以凶。今日宜谨慎行事，防微杜渐。'},
+        {name:'䷾ 水火既济',guaCi:'既济，亨小。事已成，宜守成防变。',yaoCi:'初九：曳其轮。濡其尾。无咎。今日宜善始善终。'},
+        {name:'䷿ 火水未济',guaCi:'未济，亨。尚未完成，宜继续努力。',yaoCi:'初六：濡其尾。吝。今日宜坚持不放弃。'}
+    ];
+    // 60甲子 -> 64卦映射（按纳甲卦序简化映射）
+    // 使用日柱干支索引 -> 卦序
+    let stemIdx2 = (stemIdx%10) * 6; // 0-54
+    let branchIdx2 = (branchIdx%12) * 5; // 0-55
+    let gzIdx = (stemIdx2 + branchIdx2) % 60;
+    let hexIdx = gzIdx % 64;
+    return ALL_ZHOUS[hexIdx] || {name:'䷀ 乾为天',guaCi:'天行健，君子以自强不息。',yaoCi:'今日宜保持中正平和之心，顺其自然。'};
 }
 
 function initZiweiSelects(){
@@ -1881,6 +2128,33 @@ function analyzeShiShenGeJu(dGZ,ps){
     }
 
     html+='<p style="font-size:10px;color:#b8a49e;margin-top:4px;">格局为四柱天干十神的组合判断。完整格局需结合地支藏干、大运流年综合考量，以上为天干层面的初步解析。</p>';
+
+    // ═══ 子平真诠 · 月令格局增强 ═══
+    if(typeof analyzeGejuClassic==='function'){
+        try{
+            let gj=analyzeGejuClassic(dGZ,ps,ps[1].b);
+            if(gj&&gj.geju&&gj.geju!=='平'){
+                html+='<div style="margin-top:12px;padding:10px 12px;background:#f5f0e6;border-radius:8px;border-left:3px solid var(--gold,#b89968);">';
+                html+='<div style="font-weight:700;color:var(--gold,#b89968);margin-bottom:4px;">📜 子平真诠 · 月令取格</div>';
+                html+='<div style="font-size:11px;line-height:1.7;color:var(--text);">以月令为纲，本命以 <strong>'+gj.geju+'格</strong> 论。月令乃八字之提纲，格局之所出；用神即在格中求。格正局清者，一生行运有主轴；格杂者宜专守一途，忌见破格之神。</div>';
+                html+='</div>';
+            }
+        }catch(e){}
+    }
+
+    // ═══ 三命通会 · 纳音论命增强 ═══
+    if(typeof analyzeNayinClassic==='function'){
+        try{
+            let ny=analyzeNayinClassic(ps);
+            if(ny){
+                html+='<div style="margin-top:8px;padding:10px 12px;background:#f5f0e6;border-radius:8px;border-left:3px solid var(--gold,#b89968);">';
+                html+='<div style="font-weight:700;color:var(--gold,#b89968);margin-bottom:4px;">📜 三命通会 · 纳音论命</div>';
+                html+='<div style="font-size:11px;line-height:1.7;color:var(--text);">以年柱纳音为本命之元，参月日时三柱纳音之生克：'+ny+'。纳音相生则根基稳固、贵人多助；纳音相克则需以调候通关化解。</div>';
+                html+='</div>';
+            }
+        }catch(e){}
+    }
+
     return html;
 }
 
@@ -1965,6 +2239,21 @@ function analyzeWuxingFlow(wc,gys){
         advice.push('用神<strong>'+ysWx+'</strong>是你的调和剂——日常生活中多接触'+ysWx+'属性的人事物，能帮助五行流转更加顺畅。');
     }
     if(advice.length>0)html+='<p style="font-size:11px;line-height:1.8;">'+advice.join('<br>')+'</p>';
+
+    // ═══ 滴天髓 · 通变源流洞察 ═══
+    try{
+        if(typeof gst!=='undefined'&&gst&&(gst.flow||gst.tongguan||gst.zhenShen)){
+            html+='<div style="margin-top:12px;padding:10px 12px;background:#f5f0e6;border-radius:8px;border-left:3px solid var(--gold,#b89968);">';
+            html+='<div style="font-weight:700;color:var(--gold,#b89968);margin-bottom:4px;">📜 滴天髓 · 通变源流</div>';
+            let dt=[];
+            if(gst.zhenShen)dt.push('月令真神为 <strong>'+gst.zhenShen+'</strong>——真神得用则一生行运有根，喜其得助、忌其受制。');
+            if(gst.flow)dt.push('命局气机流向 <strong>'+gst.flow+'</strong>——源流顺则富贵绵长，逆则须以用神疏导。');
+            if(gst.tongguan)dt.push('局中交战，喜 <strong>'+gst.tongguan+'</strong> 为通关之神——通关一到，两强相战化为相生。');
+            else dt.push('局中五行未见明显交战，气机相对流畅。');
+            html+='<div style="font-size:11px;line-height:1.7;color:var(--text);">'+dt.join('<br>')+'</div>';
+            html+='</div>';
+        }
+    }catch(e){}
 
     html+='<p style="font-size:10px;color:#b8a49e;margin-top:4px;">五行流通分析基于四柱天干地支的五行分布。完整的流通分析需结合大运流年的五行引入，以上为命局静态分析。</p>';
     return html;

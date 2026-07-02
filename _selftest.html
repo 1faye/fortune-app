@@ -1,0 +1,54 @@
+<!DOCTYPE html><html><head><meta charset="UTF-8">
+<link rel="stylesheet" href="css/style.css"></head><body>
+<div id="mode-bazi">
+<div class="card" id="input">
+<select id="byear"></select><select id="bmonth"></select><select id="bday"></select><select id="bhour"></select>
+<div class="gender-toggle" id="gt"><button class="active" data-g="male">男</button><button data-g="female">女</button></div>
+<input type="hidden" id="bmin" value="0"><input type="hidden" id="lonVal" value="116.4">
+</div>
+<div id="res" style="display:none;"></div></div>
+<select id="lnYearSel" style="display:none"></select>
+<select id="lyYearSel" style="display:none"></select><select id="lyMonthSel" style="display:none"></select>
+<select id="lrYearSel" style="display:none"></select><select id="lrMonthSel" style="display:none"></select><select id="lrDaySel" style="display:none"></select>
+<script src="js/data.js"></script><script src="js/classics.js"></script>
+<script src="js/app.js"></script><script src="js/analysis.js"></script>
+<script src="js/analysis_extra.js"></script><script src="js/divination.js"></script>
+<script src="js/report.js"></script>
+<script>
+window.addEventListener('load',function(){
+  setTimeout(function(){
+    var log=[];
+    try{
+      initSelects();
+      document.getElementById('byear').value='1990';
+      document.getElementById('bmonth').value='6';
+      document.getElementById('bday').value='15';
+      document.getElementById('bhour').value='14';
+      document.querySelector('#gt button[data-g="male"]').click();
+      calc();
+      log.push('calc OK');
+    }catch(e){log.push('calc ERR: '+e.message);}
+    var r={};
+    r.subTabs=!!document.getElementById('baziSubTabs');
+    r.panels=!!document.getElementById('baziPanels');
+    r.tabCount=document.querySelectorAll('#baziSubTabs .sub-tab').length;
+    r.panelCount=document.querySelectorAll('#baziPanels .tab-panel').length;
+    r.tabNames=Array.from(document.querySelectorAll('#baziSubTabs .sub-tab')).map(function(t){return t.textContent;}).join('|');
+    var txt=document.getElementById('res').innerText||'';
+    r.ziping=txt.indexOf('子平真诠')>=0||txt.indexOf('月令取格')>=0;
+    r.sanming=txt.indexOf('三命通会')>=0||txt.indexOf('纳音论命')>=0;
+    r.ditian=txt.indexOf('滴天髓')>=0||txt.indexOf('通变源流')>=0;
+    try{var rep=generateReport();r.repLen=rep.length;r.repDyn=rep.indexOf('吉利')>=0;}catch(e){r.repErr=e.message;}
+    // 调试：检查 organizeBaziTabs 是否抛错
+    try{organizeBaziTabs();r.orgOk=true;}catch(e){r.orgErr=e.message;}
+    r._built=_baziTabsBuilt;
+    r.resChildren=document.getElementById('res').children.length;
+    r.summaryTop=!!document.getElementById('summaryTop');
+    var resHtml=document.getElementById('res').innerHTML;
+    r.resHtmlLen=resHtml.length;
+    r.resHtmlHead=resHtml.substring(0,150).replace(/\n/g,' ');
+    r.baziCard=!!document.getElementById('bazi');
+    document.title='SELFTEST:'+JSON.stringify(r)+'|||'+log.join(';');
+  },800);
+});
+</script></body></html>

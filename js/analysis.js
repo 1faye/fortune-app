@@ -1105,12 +1105,13 @@ function analyzeWeekly(dGZ,gys){
         let d=new Date(today);d.setDate(d.getDate()+i);
         let gz=getDayGZ(d);let wx=SE[gz.s];
         let isYong=gys.ys.includes(wx),isJi=gys.js.includes(wx);
-        let loveTxt=isYong?'💖 桃花运旺，适合约会或表白':isJi?'💔 感情需谨慎，避免争执':'💗 平运，顺其自然';
-        let careerTxt=isYong?'💼 工作效率高，适合推进重要项目':isJi?'⚠️ 职场易遇阻力，宜低调行事':'📋 平运，按部就班';
-        let moneyTxt=isYong?'💰 财运佳，适合投资或谈薪资':isJi?'💸 财运不稳，避免大额支出':'💳 平运，收支平衡';
-        dailyDetail+='<span style="display:inline-block;width:13%;font-size:9px;text-align:center;vertical-align:top;">'+weekDayNames[d.getDay()]+'<br><span class="wx-'+wx+'">'+S[gz.s]+B[gz.b]+'</span><br>'+loveTxt+'<br>'+careerTxt+'<br>'+moneyTxt+'</span>';
+        let loveTxt=isYong?'💖桃花旺·宜约会':isJi?'💔感情慎·避争执':'💗平运·顺自然';
+        let careerTxt=isYong?'💼效率高·推项目':isJi?'⚠️遇阻力·宜低调':'📋按部就班';
+        let moneyTxt=isYong?'💰财运佳·宜投资':isJi?'💸财不稳·免大额':'💳收支平衡';
+        let dailyIcon=isYong?'🌟':isJi?'⚡':'➖';
+        dailyDetail+='<div style="display:inline-block;width:140px;font-size:10px;text-align:left;vertical-align:top;padding:6px 8px;margin:2px;background:#fdf8f5;border-radius:6px;border:1px solid var(--border);"><b>'+weekDayNames[d.getDay()]+'</b> <span class="wx-'+wx+'">'+S[gz.s]+B[gz.b]+'</span> '+dailyIcon+'<br>'+loveTxt+'<br>'+careerTxt+'<br>'+moneyTxt+'</div>';
     }
-    t+='<p><strong>【每日维度细分】</strong></p><div style="font-size:10px;line-height:1.6;overflow-x:auto;white-space:nowrap;padding:6px 0;">'+dailyDetail+'</div>';
+    t+='<p><strong>【每日维度细分】</strong></p><div style="font-size:10px;line-height:1.6;overflow-x:auto;white-space:nowrap;padding:8px 0;max-width:100%;">'+dailyDetail+'</div>';
 
     // 本周开运小贴士
     let luckyDir={木:'东方',火:'南方',土:'居中',金:'西方',水:'北方'}[gys.xs[0]]||'东南方';
